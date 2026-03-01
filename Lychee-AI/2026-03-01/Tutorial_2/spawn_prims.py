@@ -80,6 +80,9 @@ def design_scene():
     cfg.func("/World/Objects/Table", cfg, translation=(0.0, 0.0, 1.05))
 
 
+
+
+
 def main():
     """Main function."""
 
