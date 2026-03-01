@@ -104,8 +104,9 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, RigidObj
             print("[INFO]: Resetting object state...")
         # apply sim data
         cone_object.write_data_to_sim()
-        # perform step
-        sim.step()
+        
+        sim.step()              # perform step
+
         # update sim-time
         sim_time += sim_dt
         count += 1
@@ -123,8 +124,10 @@ def main():
     sim = SimulationContext(sim_cfg)
     # Set main camera
     sim.set_camera_view(eye=[1.5, 0.0, 1.0], target=[0.0, 0.0, 0.0])
+    
     # Design scene
-    scene_entities, scene_origins = design_scene()
+    scene_entities, scene_origins = design_scene()      # <-- function we declared ourselves!
+
     scene_origins = torch.tensor(scene_origins, device=sim.device)
     # Play the simulator
     sim.reset()
