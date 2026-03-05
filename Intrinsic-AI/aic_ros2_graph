@@ -1,0 +1,185 @@
+// AI for Industry Challenge — ROS 2 Computation Graph
+digraph AIC_ROS2_Graph {
+	bgcolor="#0d1117" concentrate=false fontcolor="#c9d1d9" fontname=Helvetica fontsize=11 label=<<B><FONT POINT-SIZE='20' COLOR='#58a6ff'>AIC — ROS 2 Computation Graph</FONT></B><BR/><FONT POINT-SIZE='12' COLOR='#8b949e'>AI for Industry Challenge  |  Cable Insertion Task  |  UR5e + Robotiq Hand-E</FONT>> labelloc=t nodesep=0.4 overlap=false pad=0.5 rankdir=LR ranksep=1.2 splines=true
+	edge [fontcolor="#8b949e" fontname=Courier fontsize=8]
+	subgraph cluster_sim {
+		bgcolor="#0b1215" color="#238636" fontcolor="#3fb950" fontname=Helvetica label=<<B>GAZEBO SIMULATION</B><BR/><FONT POINT-SIZE='9'>gz-sim  |  Bullet-Featherstone  |  2ms timestep</FONT>> style=dashed
+		gz_server [label="gz_server
+(Physics + Rendering)" color="#238636" fillcolor="#0d4429" fontcolor="#3fb950" fontname="Helvetica-Bold" fontsize=12 penwidth=2 shape=box3d style=filled]
+		gz_scoring_plugin [label="ScoringPlugin
+(gz plugin)" color="#238636" fillcolor="#0d4429" fontcolor="#3fb950" fontname="Helvetica-Bold" fontsize=12 penwidth=2 shape=box3d style=filled]
+		gz_cable_plugin [label="CablePlugin
+(gz plugin)" color="#238636" fillcolor="#0d4429" fontcolor="#3fb950" fontname="Helvetica-Bold" fontsize=12 penwidth=2 shape=box3d style=filled]
+		gz_offlimit_plugin [label="OffLimitContacts
+Plugin (gz)" color="#238636" fillcolor="#0d4429" fontcolor="#3fb950" fontname="Helvetica-Bold" fontsize=12 penwidth=2 shape=box3d style=filled]
+	}
+	subgraph cluster_eval {
+		bgcolor="#0d1117" color="#30363d" fontcolor="#8b949e" fontname=Helvetica label=<<B>EVALUATION STACK</B><BR/><FONT POINT-SIZE='9'>Organizer-provided  |  Read-only for participants</FONT>> style=dashed
+		aic_engine [label="aic_engine
+(Trial Orchestrator)" color="#30363d" fillcolor="#21262d" fontcolor="#c9d1d9" fontname="Helvetica-Bold" fontsize=12 penwidth=2 shape=box style=filled]
+		aic_controller [label="aic_controller
+(ros2_control)
+Cartesian + Joint
+Impedance Control" color="#30363d" fillcolor="#21262d" fontcolor="#c9d1d9" fontname="Helvetica-Bold" fontsize=12 penwidth=2 shape=box style=filled]
+		aic_adapter [label="aic_adapter
+(Sensor Fusion)
+@ 20 Hz" color="#30363d" fillcolor="#21262d" fontcolor="#c9d1d9" fontname="Helvetica-Bold" fontsize=12 penwidth=2 shape=box style=filled]
+		aic_scoring [label="aic_scoring
+(Tier 1/2/3)" color="#30363d" fillcolor="#21262d" fontcolor="#c9d1d9" fontname="Helvetica-Bold" fontsize=12 penwidth=2 shape=box style=filled]
+		robot_state_pub [label="robot_state
+_publisher" color="#30363d" fillcolor="#161b22" fontcolor="#8b949e" fontname=Helvetica fontsize=11 penwidth=1.5 shape=box style="filled,dashed"]
+		joint_state_bc [label="joint_state
+_broadcaster
+(ros2_control)" color="#30363d" fillcolor="#161b22" fontcolor="#8b949e" fontname=Helvetica fontsize=11 penwidth=1.5 shape=box style="filled,dashed"]
+		fts_broadcaster [label="fts_broadcaster
+(ros2_control)" color="#30363d" fillcolor="#161b22" fontcolor="#8b949e" fontname=Helvetica fontsize=11 penwidth=1.5 shape=box style="filled,dashed"]
+		ros_gz_bridge [label="ros_gz_bridge
+(GZ ↔ ROS)" color="#30363d" fillcolor="#161b22" fontcolor="#8b949e" fontname=Helvetica fontsize=11 penwidth=1.5 shape=box style="filled,dashed"]
+	}
+	subgraph cluster_participant {
+		bgcolor="#0d1420" color="#1f6feb" fontcolor="#58a6ff" fontname="Helvetica-Bold" label=<<B>YOUR SUBMISSION</B><BR/><FONT POINT-SIZE='9'>aic_model container  |  Implement Policy.insert_cable()</FONT>> style=bold
+		aic_model [label="aic_model
+(LifecycleNode)
++ YourPolicy" color="#58a6ff" fillcolor="#1f6feb" fontcolor=white fontname="Helvetica-Bold" fontsize=12 penwidth=2.5 shape=box style="filled,bold"]
+	}
+	t_left_image [label="/left_camera/image
+Image" color="#d29922" fillcolor="#1a1e24" fontcolor="#f0883e" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_left_info [label="/left_camera/
+camera_info
+CameraInfo" color="#d29922" fillcolor="#1a1e24" fontcolor="#f0883e" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_center_image [label="/center_camera/image
+Image" color="#d29922" fillcolor="#1a1e24" fontcolor="#f0883e" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_center_info [label="/center_camera/
+camera_info
+CameraInfo" color="#d29922" fillcolor="#1a1e24" fontcolor="#f0883e" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_right_image [label="/right_camera/image
+Image" color="#d29922" fillcolor="#1a1e24" fontcolor="#f0883e" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_right_info [label="/right_camera/
+camera_info
+CameraInfo" color="#d29922" fillcolor="#1a1e24" fontcolor="#f0883e" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_joint_states [label="/joint_states
+JointState [7]" color="#d29922" fillcolor="#1a1e24" fontcolor="#f0883e" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_fts_wrench [label="/fts_broadcaster
+/wrench
+WrenchStamped" color="#d29922" fillcolor="#1a1e24" fontcolor="#f0883e" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_controller_state [label="/aic_controller
+/controller_state
+ControllerState" color="#d29922" fillcolor="#1a1e24" fontcolor="#f0883e" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_clock [label="/clock
+Clock (sim time)" color="#d29922" fillcolor="#1a1e24" fontcolor="#f0883e" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_observations [label="/observations
+Observation @ 20Hz
+3 images + joints
++ wrench + ctrl_state" color="#8957e5" fillcolor="#1a1e24" fontcolor="#a371f7" fontname="Courier Bold" fontsize=10 penwidth=1.5 shape=ellipse style="filled,bold"]
+	t_pose_cmds [label="/aic_controller
+/pose_commands
+MotionUpdate" color="#f85149" fillcolor="#1a1e24" fontcolor="#da3633" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_joint_cmds [label="/aic_controller
+/joint_commands
+JointMotionUpdate" color="#f85149" fillcolor="#1a1e24" fontcolor="#da3633" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_tf [label="/tf
+TFMessage
+(robot kinematic
+frames)" color="#388bfd" fillcolor="#1a1e24" fontcolor="#79c0ff" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_tf_static [label="/tf_static
+TFMessage
+(static frames)" color="#388bfd" fillcolor="#1a1e24" fontcolor="#79c0ff" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_scoring_tf [label="/scoring/tf
+TFMessage
+(cable + task_board
+ground truth)" color="#388bfd" fillcolor="#1a1e24" fontcolor="#79c0ff" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_off_limit [label="/aic/gazebo/contacts
+/off_limit
+Contacts" color="#238636" fillcolor="#1a1e24" fontcolor="#3fb950" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	t_insertion [label="/scoring/
+insertion_event
+String" color="#238636" fillcolor="#1a1e24" fontcolor="#3fb950" fontname=Courier fontsize=9 penwidth=1 shape=ellipse style=filled]
+	s_change_mode [label="/aic_controller/
+change_target_mode
+ChangeTargetMode.srv" color="#8957e5" fillcolor="#1a1e24" fontcolor="#d2a8ff" fontname=Courier fontsize=8 penwidth=1 shape=diamond style=filled]
+	s_cancel_task [label="/cancel_task
+Empty.srv" color="#8957e5" fillcolor="#1a1e24" fontcolor="#d2a8ff" fontname=Courier fontsize=8 penwidth=1 shape=diamond style=filled]
+	s_reset_joints [label="/reset_joints
+ResetJoints.srv" color="#8957e5" fillcolor="#1a1e24" fontcolor="#d2a8ff" fontname=Courier fontsize=8 penwidth=1 shape=diamond style=filled]
+	a_insert_cable [label="/insert_cable
+InsertCable.action
+Goal(Task) →
+Result(bool)
++ Feedback(str)" color="#f85149" fillcolor="#1a1e24" fontcolor="#ff7b72" fontname="Courier Bold" fontsize=9 penwidth=1.5 shape=hexagon style=filled]
+	gz_server -> ros_gz_bridge [color="#30363d" penwidth=1 style=dotted]
+	gz_server -> ros_gz_bridge [color="#30363d" penwidth=1 style=dotted]
+	gz_server -> ros_gz_bridge [color="#30363d" penwidth=1 style=dotted]
+	ros_gz_bridge -> t_left_image [color="#30363d" penwidth=1 style=dotted]
+	ros_gz_bridge -> t_left_info [color="#30363d" penwidth=1 style=dotted]
+	ros_gz_bridge -> t_center_image [color="#30363d" penwidth=1 style=dotted]
+	ros_gz_bridge -> t_center_info [color="#30363d" penwidth=1 style=dotted]
+	ros_gz_bridge -> t_right_image [color="#30363d" penwidth=1 style=dotted]
+	ros_gz_bridge -> t_right_info [color="#30363d" penwidth=1 style=dotted]
+	ros_gz_bridge -> t_clock [color="#30363d" penwidth=1 style=dotted xlabel="sim clock"]
+	gz_offlimit_plugin -> ros_gz_bridge [color="#30363d" penwidth=1 style=dotted]
+	ros_gz_bridge -> t_off_limit [color="#30363d" penwidth=1 style=dotted]
+	gz_scoring_plugin -> ros_gz_bridge [color="#30363d" penwidth=1 style=dotted]
+	ros_gz_bridge -> t_scoring_tf [color="#30363d" penwidth=1 style=dotted xlabel="cable/board poses"]
+	gz_cable_plugin -> ros_gz_bridge [color="#30363d" penwidth=1 style=dotted]
+	ros_gz_bridge -> t_insertion [color="#30363d" penwidth=1 style=dotted]
+	joint_state_bc -> t_joint_states [color="#f0883e" penwidth=1.2]
+	fts_broadcaster -> t_fts_wrench [color="#f0883e" penwidth=1.2]
+	robot_state_pub -> t_tf [color="#388bfd" penwidth=1 style=dashed xlabel="URDF FK"]
+	robot_state_pub -> t_tf_static [color="#388bfd" penwidth=1 style=dashed]
+	t_joint_states -> robot_state_pub [color="#f0883e" penwidth=1.2]
+	t_pose_cmds -> aic_controller [color="#f85149" penwidth=1.5 style=bold xlabel="Cartesian impedance"]
+	t_joint_cmds -> aic_controller [color="#f85149" penwidth=1.5 style=bold xlabel="Joint impedance"]
+	aic_controller -> t_controller_state [color="#f0883e" penwidth=1.2]
+	s_change_mode -> aic_controller [arrowhead=odiamond color="#8957e5" penwidth=1 style=dashed]
+	t_left_image -> aic_adapter [color="#f0883e" penwidth=1.2]
+	t_left_info -> aic_adapter [color="#f0883e" penwidth=1.2]
+	t_center_image -> aic_adapter [color="#f0883e" penwidth=1.2]
+	t_center_info -> aic_adapter [color="#f0883e" penwidth=1.2]
+	t_right_image -> aic_adapter [color="#f0883e" penwidth=1.2]
+	t_right_info -> aic_adapter [color="#f0883e" penwidth=1.2]
+	t_joint_states -> aic_adapter [color="#f0883e" penwidth=1.2]
+	t_fts_wrench -> aic_adapter [color="#f0883e" penwidth=1.2]
+	t_controller_state -> aic_adapter [color="#f0883e" penwidth=1.2]
+	aic_adapter -> t_observations [color="#8957e5" penwidth=1.5 xlabel="time-synced composite"]
+	t_observations -> aic_model [color="#8957e5" penwidth=1.5 xlabel="get_observation()"]
+	aic_model -> t_pose_cmds [color="#f85149" penwidth=1.5 style=bold xlabel="move_robot(motion_update=...)"]
+	aic_model -> t_joint_cmds [color="#f85149" penwidth=1.5 style=bold xlabel="move_robot(joint_motion_update=...)"]
+	aic_model -> s_change_mode [arrowhead=odiamond color="#8957e5" penwidth=1 style=dashed xlabel="auto switch"]
+	t_tf -> aic_model [color="#388bfd" penwidth=1 style=dashed xlabel="TF buffer (training only)"]
+	t_scoring_tf -> aic_model [color="#f85149" fontcolor="#f85149" fontname=Courier fontsize=8 penwidth=1 style=dotted xlabel="FORBIDDEN in eval!"]
+	aic_engine -> a_insert_cable [color="#f85149" penwidth=1.5 style=bold xlabel="sends goal"]
+	a_insert_cable -> aic_model [color="#f85149" penwidth=1.5 style=bold xlabel="triggers insert_cable()"]
+	t_joint_cmds -> aic_engine [color="#238636" penwidth=1 style=dotted xlabel="monitors cmds"]
+	t_pose_cmds -> aic_engine [color="#238636" penwidth=1 style=dotted xlabel="monitors cmds"]
+	t_joint_states -> aic_engine [color="#238636" penwidth=1 style=dotted]
+	t_scoring_tf -> aic_scoring [color="#238636" penwidth=1 style=dotted xlabel="plug/port positions"]
+	t_off_limit -> aic_scoring [color="#238636" penwidth=1 style=dotted xlabel="contact violations"]
+	t_fts_wrench -> aic_scoring [color="#238636" penwidth=1 style=dotted xlabel="force magnitude"]
+	t_joint_states -> aic_scoring [color="#238636" penwidth=1 style=dotted]
+	t_tf -> aic_scoring [color="#238636" penwidth=1 style=dotted]
+	t_insertion -> aic_scoring [color="#238636" penwidth=1 style=dotted xlabel="insertion events"]
+	t_controller_state -> aic_scoring [color="#238636" penwidth=1 style=dotted]
+	aic_engine -> s_cancel_task [arrowhead=odiamond color="#8957e5" penwidth=1 style=dashed]
+	s_cancel_task -> aic_model [arrowhead=odiamond color="#8957e5" penwidth=1 style=dashed]
+	s_reset_joints -> gz_server [arrowhead=odiamond color="#8957e5" penwidth=1 style=dashed]
+	subgraph cluster_legend {
+		bgcolor="#0d1117" color="#30363d" fontcolor="#8b949e" fontname=Helvetica label=<<B>LEGEND</B>> rank=sink style=rounded
+		leg_participant [label="  Your Code  " color="#58a6ff" fillcolor="#1f6feb" fontcolor=white fontname="Helvetica-Bold" fontsize=10 penwidth=2 shape=box style="filled,bold"]
+		leg_eval [label="  Eval Stack  " color="#30363d" fillcolor="#21262d" fontcolor="#c9d1d9" fontname="Helvetica-Bold" fontsize=10 penwidth=2 shape=box style=filled]
+		leg_sim [label="  Simulation  " color="#238636" fillcolor="#0d4429" fontcolor="#3fb950" fontname="Helvetica-Bold" fontsize=10 penwidth=2 shape=box3d style=filled]
+		leg_topic_sensor [label="  /sensor_topic  " color="#d29922" fillcolor="#1a1e24" fontcolor="#f0883e" fontname=Courier fontsize=9 shape=ellipse style=filled]
+		leg_topic_cmd [label="  /command_topic  " color="#f85149" fillcolor="#1a1e24" fontcolor="#da3633" fontname=Courier fontsize=9 shape=ellipse style=filled]
+		leg_topic_comp [label="  /composite  " color="#8957e5" fillcolor="#1a1e24" fontcolor="#a371f7" fontname=Courier fontsize=9 penwidth=1.5 shape=ellipse style="filled,bold"]
+		leg_topic_tf [label="  /tf_topic  " color="#388bfd" fillcolor="#1a1e24" fontcolor="#79c0ff" fontname=Courier fontsize=9 shape=ellipse style=filled]
+		leg_svc [label="  /service  " color="#8957e5" fillcolor="#1a1e24" fontcolor="#d2a8ff" fontname=Courier fontsize=9 shape=diamond style=filled]
+		leg_action [label="  /action  " color="#f85149" fillcolor="#1a1e24" fontcolor="#ff7b72" fontname=Courier fontsize=9 shape=hexagon style=filled]
+		leg_participant -> leg_eval [style=invis]
+		leg_eval -> leg_sim [style=invis]
+		leg_sim -> leg_topic_sensor [style=invis]
+		leg_topic_sensor -> leg_topic_cmd [style=invis]
+		leg_topic_cmd -> leg_topic_comp [style=invis]
+		leg_topic_comp -> leg_topic_tf [style=invis]
+		leg_topic_tf -> leg_svc [style=invis]
+		leg_svc -> leg_action [style=invis]
+	}
+}
