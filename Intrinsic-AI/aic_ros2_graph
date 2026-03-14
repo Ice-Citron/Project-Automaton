@@ -182,4 +182,6 @@ Result(bool)
 		leg_topic_tf -> leg_svc [style=invis]
 		leg_svc -> leg_action [style=invis]
 	}
+	watermark [label=<<FONT POINT-SIZE='11' COLOR='#484f58'>Project Liberty 2025</FONT>> fontname=Helvetica shape=plaintext]
+	leg_action -> watermark [style=invis]
 }

@@ -354,6 +354,18 @@ def create_aic_graph():
         lg.edge("leg_topic_tf", "leg_svc", style="invis")
         lg.edge("leg_svc", "leg_action", style="invis")
 
+    # ================================================================
+    #  WATERMARK: Bottom-right
+    # ================================================================
+    dot.node(
+        "watermark",
+        "<<FONT POINT-SIZE='11' COLOR='#484f58'>"
+        "Project Liberty 2025</FONT>>",
+        shape="plaintext", fontname="Helvetica",
+    )
+    # Pin it below everything via invisible edges from the legend
+    dot.edge("leg_action", "watermark", style="invis")
+
     return dot
 
 
