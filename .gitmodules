@@ -1,0 +1,3 @@
+[submodule "References/aic"]
+	path = References/aic
+	url = https://github.com/intrinsic-dev/aic.git
