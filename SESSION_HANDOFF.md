@@ -1,6 +1,6 @@
 # Project Automaton — Session Handoff & Continuation Guide
 
-> **Last updated:** March 2026
+> **Last updated:** 2026-03-16 (Session 3)
 > **Purpose:** Drop this file into a new Claude Code chat to seamlessly continue where we left off.
 
 ---
@@ -9,19 +9,107 @@
 
 **Project Automaton** is a multi-target robotics + AI initiative hitting 3 goals with 1 codebase:
 
-1. **Intrinsic AI Challenge (AIC)** — Training a UR5e robot to autonomously insert fiber optic cables (SFP, LC, SC connectors) into electronics assembly workstations. Competition runs Mar 2 - Sep 8, 2026. Qualification phase is active now.
-2. **Revel x NVIDIA Hackathon** — Training a modified SO-101 robot arm to assemble Lego sets using Isaac Sim + LeRobot.
-3. **Interceptor Drone** — ArduPilot/ROS integration for an autonomous drone project.
+1. **Intrinsic AI Challenge (AIC)** — Training a UR5e robot to autonomously insert fiber optic cables (SFP, LC, SC connectors) into electronics assembly workstations. Competition runs Mar 2 - Sep 8, 2026. Qualification phase is active now (ends May 27).
+2. **Revel x NVIDIA Hackathon** — SO-101 robot arm assembling Lego sets via Isaac Sim + LeRobot.
+3. **Interceptor Drone** — ArduPilot/ROS autonomous drone.
+
+---
+
+## Environment Setup (COMPLETED 2026-03-16)
+
+### Dual-System Architecture
+
+The project spans **Windows** (browsing, notes, Git) and **WSL2 Ubuntu 24.04** (building, running, training). Both have copies of Project-Automaton synced via Git.
+
+```
+WINDOWS (C:\Users\StarForge-SF\Black_Projects\Project-Automaton)
+  Purpose: File Explorer browsing, notes, Git operations, VS Code
+  AIC: References/aic/ exists but pixi CANNOT run here (linux-64 only)
+
+WSL2 (~/projects/Project-Automaton)
+  Purpose: All building, running, training, pixi shell, ROS 2, Gazebo
+  AIC: References/aic/ with pixi installed and working
+  Sync: Both point to same GitHub remote — push from one, pull from other
+```
+
+### What's Installed Where
+
+| Component | Location | Version | Status |
+|-----------|----------|---------|--------|
+| **Pixi** | WSL2 `~/.pixi/bin/pixi` | v0.65.0 | Working |
+| **Pixi** | Windows `%LOCALAPPDATA%\pixi\bin\pixi.exe` | v0.65.0 | Installed (can't use for AIC) |
+| **ROS 2 Kilted** | WSL2 via pixi (AIC workspace) | Kilted | Working (`pixi run ros2 topic list`) |
+| **MuJoCo** | WSL2 pixi (AIC workspace) | 3.5.0 | Working (bundled in AIC pixi.toml) |
+| **MuJoCo** | WSL2 `~/envs/mujoco` venv | 3.6.0 | Working |
+| **MJX** (GPU parallel) | WSL2 `~/envs/mujoco` venv | 3.6.0 | Working |
+| **MuJoCo Warp** (NVIDIA native) | WSL2 `~/envs/mujoco` venv | 3.6.0 | Working |
+| **JAX + CUDA 12** | WSL2 `~/envs/mujoco` venv | 0.9.1 | Working (sees RTX 5090) |
+| **Warp** | WSL2 `~/envs/mujoco` venv | 1.12.0 | Working (sees RTX 5090, sm_120) |
+| **Gazebo Ionic** | WSL2 system | — | **NOT INSTALLED** |
+| **ROS 2 Kilted (system-level)** | WSL2 system | — | **NOT INSTALLED** (optional, pixi handles it for AIC) |
+| **GPU** | WSL2 passthrough | RTX 5090, CUDA 12.9, 32GB VRAM | Working |
+
+### MuJoCo vs MJX vs MuJoCo Warp
+
+- **MuJoCo** = core physics engine. CPU-based, single-threaded. Great for testing individual policies.
+- **MJX** = MuJoCo's GPU-accelerated parallel simulation via JAX/XLA. Runs 4096+ environments simultaneously on the 5090. Ideal for RL sweeps.
+- **MuJoCo Warp** = NVIDIA's GPU-native fork built on Warp (CUDA). Potentially better raw throughput on NVIDIA hardware than MJX.
+- All three share the same MJCF XML model format — swap backends without rewriting sims.
+
+### Aliases
+
+**WSL2 (`~/.bashrc`):**
+```bash
+alias automaton="cd ~/projects/Project-Automaton"
+alias aic="cd ~/projects/Project-Automaton/References/aic"
+alias automaton-win="cd /mnt/c/Users/StarForge-SF/Black_Projects/Project-Automaton"
+alias mujoco="source ~/envs/mujoco/bin/activate"
+```
+
+**Windows PowerShell (`Microsoft.PowerShell_profile.ps1`):**
+```powershell
+function black { Set-Location "C:\Users\StarForge-SF\Black_Projects" }
+function automaton { Set-Location "C:\Users\StarForge-SF\Black_Projects\Project-Automaton" }
+function aic { Set-Location "C:\Users\StarForge-SF\Black_Projects\Project-Automaton\References\aic" }
+function liberty { Set-Location "C:\Users\StarForge-SF\Black_Projects\Project-Liberty" }
+```
+
+### Key File Locations
+
+```
+WINDOWS:
+  C:\Users\StarForge-SF\Black_Projects\Project-Automaton\          ← Main repo (browsing/notes)
+  C:\Users\StarForge-SF\Black_Projects\Project-Automaton\WSL2-Automaton.url  ← Shortcut to WSL2 copy
+  C:\Users\StarForge-SF\AppData\Local\pixi\bin\pixi.exe            ← Windows pixi
+  C:\Users\StarForge-SF\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1  ← PS aliases
+
+WSL2:
+  ~/projects/Project-Automaton/                    ← Working repo (build/run/train)
+  ~/projects/Project-Automaton/References/aic/     ← AIC workspace (pixi installed)
+  ~/projects/Project-Automaton/References/aic/.pixi/  ← Pixi environment (ROS 2, MuJoCo 3.5.0, deps)
+  ~/envs/mujoco/                                   ← venv with MuJoCo 3.6.0 + MJX + Warp + JAX CUDA
+  ~/.pixi/bin/pixi                                 ← Pixi binary
+  ~/.bashrc                                        ← Aliases
+```
+
+### WSL2 Performance Note
+
+- Working inside `~/` (ext4) = fast native Linux speed
+- Working inside `/mnt/c/` = slow due to 9P filesystem bridge
+- That's why the working copy is in `~/projects/`, not `/mnt/c/`
+- Access WSL2 files from Windows Explorer: `\\wsl.localhost\Ubuntu-24.04\home\starforge-sf\projects\`
+- Use `code .` from WSL2 terminal to open VS Code Remote-WSL for full intellisense
 
 ---
 
 ## Directory Map
 
 ```
-/Users/administrator/Black_Projects/Project-Automaton/
+~/projects/Project-Automaton/  (WSL2) or C:\...\Black_Projects\Project-Automaton\ (Windows)
 ├── SESSION_HANDOFF.md          ← THIS FILE
 ├── README.md
 ├── LICENSE
+├── WSL2-Automaton.url          ← (Windows only) shortcut to WSL2 copy
 │
 ├── SO-101/                     ← Physical robot project
 │   ├── lerobot/                ← HuggingFace LeRobot framework (v0.4.3)
@@ -30,16 +118,12 @@
 │   │   └── docs/               ← Includes LeIsaac integration guide
 │   ├── lerobot-venv/           ← Python virtual environment
 │   └── Print Files/            ← 3D print STLs for custom SO-101 end-effectors
-│       ├── Ender_Follower_SO101.stl
-│       ├── Ender_Leader_SO101.stl
-│       └── Gauge_*.STL
 │
 ├── Lychee-AI/                  ← Isaac Lab tutorial work
 │   ├── 2026-02-28/Tutorial_1/  ← create_empty.py (basic scene)
 │   ├── 2026-03-01/
 │   │   ├── Tutorial_2/         ← spawn_prims.py (objects, meshes, lights)
-│   │   └── Tutorial_3/         ← run_rigid_object.py, run_articulation.py,
-│   │                              run_deformable_object.py
+│   │   └── Tutorial_3/         ← run_rigid_object.py, run_articulation.py
 │
 ├── Liberty-Notes/              ← Research & learning notebooks
 │   ├── Nvidia-Issac-Lab/       ← Feb-04 through March-04 .ipynb study logs
@@ -53,124 +137,111 @@
 │
 ├── References/
 │   ├── Intrinsic AI Notes/     ← Manual notes
-│   └── aic/                    ← FULL AIC TOOLKIT REPO (cloned from intrinsic-dev/aic)
-│       ├── README.md
-│       ├── pixi.toml           ← Pixi package manager config
-│       ├── aic.repos           ← VCS dependency manifest
-│       ├── docs/               ← 12+ comprehensive guides (scoring, rules, submission, etc.)
-│       │
+│   └── aic/                    ← AIC TOOLKIT REPO (git submodule → intrinsic-dev/aic)
+│       ├── pixi.toml           ← Pixi workspace config (robostack-kilted + conda-forge)
+│       ├── pixi.lock           ← Locked dependency versions
+│       ├── .pixi/              ← (WSL2 only) installed environment
 │       ├── aic_model/          ← PARTICIPANT FRAMEWORK (what you subclass)
 │       │   └── aic_model/
-│       │       ├── aic_model.py    ← ROS 2 LifecycleNode (335 lines) — loads your policy
-│       │       └── policy.py       ← Abstract Policy base class (146 lines) — YOU IMPLEMENT THIS
-│       │
+│       │       ├── aic_model.py    ← ROS 2 LifecycleNode — loads your policy
+│       │       └── policy.py       ← Abstract Policy base class — YOU IMPLEMENT THIS
 │       ├── aic_example_policies/   ← Reference implementations
 │       │   └── aic_example_policies/ros/
-│       │       ├── WaveArm.py      ← Minimal example (85 lines) — arm waves side-to-side
-│       │       ├── CheatCode.py    ← Ground truth policy (259 lines) — optimal insertion strategy
-│       │       ├── RunACT.py       ← Neural network policy (321 lines) — ACT from HuggingFace
-│       │       ├── GentleGiant.py  ← Low-jerk smooth motion (joint-space control)
-│       │       ├── SpeedDemon.py   ← High-jerk aggressive motion (comparison)
+│       │       ├── WaveArm.py      ← Minimal example (arm waves)
+│       │       ├── CheatCode.py    ← Ground truth policy (optimal insertion)
+│       │       ├── RunACT.py       ← Neural network policy (ACT from HuggingFace)
+│       │       ├── GentleGiant.py  ← Low-jerk smooth motion
+│       │       ├── SpeedDemon.py   ← High-jerk aggressive motion
 │       │       ├── WallToucher.py  ← Collision detection test
 │       │       └── WallPresser.py  ← Force control demo
-│       │
-│       ├── aic_interfaces/         ← ROS 2 message/service/action definitions
-│       │   ├── aic_model_interfaces/msg/Observation.msg     ← 3 cameras + joints + wrench + ctrl
-│       │   ├── aic_control_interfaces/msg/MotionUpdate.msg  ← Cartesian impedance commands
-│       │   ├── aic_control_interfaces/msg/JointMotionUpdate.msg  ← Joint-space commands
-│       │   ├── aic_control_interfaces/msg/ControllerState.msg    ← TCP pose/vel/error
-│       │   ├── aic_control_interfaces/msg/TargetMode.msg         ← Cartesian vs Joint enum
-│       │   ├── aic_control_interfaces/msg/TrajectoryGenerationMode.msg ← Position vs Velocity
-│       │   ├── aic_control_interfaces/srv/ChangeTargetMode.srv
-│       │   ├── aic_task_interfaces/msg/Task.msg              ← Cable/plug/port/module info
-│       │   ├── aic_task_interfaces/action/InsertCable.action ← Main task trigger
-│       │   └── aic_engine_interfaces/srv/ResetJoints.srv
-│       │
+│       ├── aic_interfaces/         ← ROS 2 msg/srv/action definitions
 │       ├── aic_engine/             ← Trial orchestrator (C++)
-│       │   └── config/sample_config.yaml  ← 3 sample trials with board layouts
 │       ├── aic_controller/         ← Low-level robot control (ros2_control, C++)
-│       ├── aic_adapter/            ← Sensor fusion node (C++) — composites to Observation @ 20Hz
-│       ├── aic_scoring/            ← Scoring system (C++) — Tier 1/2/3
-│       │   └── config/tier1.yaml, tier2.yaml
-│       ├── aic_gazebo/             ← Gazebo plugins (ScoringPlugin, CablePlugin, OffLimitContacts)
+│       ├── aic_adapter/            ← Sensor fusion node (C++)
+│       ├── aic_scoring/            ← Scoring system (C++)
+│       ├── aic_gazebo/             ← Gazebo plugins
 │       ├── aic_description/        ← URDF/SDF models
-│       │   ├── urdf/ur_gz.urdf.xacro       ← UR5e + cameras + gripper + F/T sensor
-│       │   ├── urdf/task_board.urdf.xacro   ← Modular task board (randomizable)
-│       │   ├── urdf/cable.sdf.xacro         ← Cable models (sfp_sc, sfp_sc_reversed)
-│       │   └── world/aic.sdf               ← Full simulation world
-│       ├── aic_bringup/
-│       │   └── launch/aic_gz_bringup.launch.py  ← Main launch file
-│       ├── aic_assets/             ← 3D meshes (Robotiq, Basler, NIC cards, cables, etc.)
-│       ├── aic_utils/              ← Teleoperation, MuJoCo integration, LeRobot dataset tools
+│       ├── aic_bringup/            ← Launch files
+│       ├── aic_assets/             ← 3D meshes
+│       ├── aic_utils/              ← Teleoperation, MuJoCo integration, LeRobot tools
 │       └── docker/                 ← Container definitions for submission
-│           ├── docker-compose.yaml
-│           └── aic_model/Dockerfile + entrypoint (inline)
 │
 ├── .gitignore
+├── .gitmodules                 ← Submodule config (References/aic → intrinsic-dev/aic)
 └── LICENSE                     ← Apache 2.0
 ```
 
 ---
 
-## What We've Done So Far
+## What's Been Done
 
-### 1. Deep AIC Repository Analysis (COMPLETE)
+### Session 1 (2026-03-15) — Deep Analysis
 - Read and analyzed every significant file in the AIC toolkit
-- Documented all 10 critical files with line-by-line explanations
-- Mapped all ROS 2 nodes, topics, services, actions, and their interconnections
-- Understood the scoring system (100 pts max = 1 Tier1 + 30 Tier2 + 75 Tier3 - penalties)
-- Identified the two control modes (Cartesian impedance vs Joint-space) and their trade-offs
-
-### 2. ROS 2 Computation Graph (COMPLETE)
+- Mapped all ROS 2 nodes, topics, services, actions and interconnections
 - Generated comprehensive Graphviz visualization at `Intrinsic-AI/aic_ros2_graph.py`
-- Shows all nodes, topics, services, actions with color coding
-- Outputs PNG, PDF (vector), and raw DOT source
-- "Project Liberty 2025" watermark in bottom-right
+- Understood scoring system (100 pts max per trial)
+- Identified two control modes (Cartesian impedance vs Joint-space)
+- Isaac Lab Tutorials 1-3 complete
+- LeRobot framework setup complete
 
-### 3. Isaac Lab Tutorials 1-3 (COMPLETE)
-- Tutorial 1: Basic scene creation
-- Tutorial 2: Spawning primitives (ground, lights, meshes)
-- Tutorial 3: Rigid bodies, articulations (CartPole), deformable objects
+### Session 2 (2026-03-15) — Environment Setup
+- Set up `Shift+Enter` keybinding for newline in Claude Code
+- Confirmed WSL2 Ubuntu 24.04 with RTX 5090 (CUDA 12.9, 32GB VRAM)
+- Cloned AIC repo on Windows
 
-### 4. LeRobot Framework Setup (COMPLETE)
-- Installed and configured for SO-100/SO-101 arm control
-- Version 0.4.3 with all dependencies
-
-### 5. Portal Access Issue (UNRESOLVED)
-- Registered for AIC competition, received confirmation email
-- Cannot log into https://aiforindustrychallenge.ai portal
-- Likely waiting for separate "onboarding email" with AWS credentials + portal access
-- Should check spam folder or post on discourse: https://discourse.openrobotics.org/c/competitions/ai-for-industry-challenge/
+### Session 3 (2026-03-16) — Full WSL2 Environment Build
+- Cloned Project-Automaton into WSL2 `~/projects/`
+- Fixed AIC git submodule (added .gitmodules, cloned properly)
+- Ran `pixi install` in AIC workspace — ROS 2 Kilted + MuJoCo 3.5.0 + all deps bundled
+- Created `~/envs/mujoco` venv with: MuJoCo 3.6.0, MJX, MuJoCo Warp, JAX CUDA 12, Warp
+- Verified all: ROS 2 (`ros2 topic list`), MuJoCo, MJX, Warp, JAX (all see RTX 5090)
+- Set up bash aliases (automaton, aic, automaton-win, mujoco) in WSL2
+- Set up PowerShell aliases (black, automaton, aic, liberty) on Windows
+- Created WSL2-Automaton.url shortcut on Windows
 
 ---
 
 ## What's Left To Do
 
-### Immediate Next Steps
-1. **Get Portal Access Sorted** — Need the onboarding email with AWS keys + ECR URI to submit
-2. **Get Isaac Sim Running with UR5e** — Port the AIC robot description into Isaac Lab USD format
-3. **Set Up ROS 2 Bridge** — Connect Isaac Sim to the AIC controller stack via the same topics
-4. **Test WaveArm Policy** — Verify full pipeline works end-to-end in sim
+### Immediate (Environment)
+1. **Install Gazebo Ionic** (system-level in WSL2) — commands below
+2. **Verify MuJoCo viewer** works visually (`python3 -m mujoco.viewer` — needs WSLg display)
+3. **Verify Gazebo GUI** works visually (`gz sim`)
 
-### Training Pipeline
-5. **Collect Demonstrations** — Run CheatCode with `ground_truth:=true` to record trajectories via LeRobot
-6. **Train ACT Policy** — Use LeRobot to train an Action Chunking with Transformers model on the demo data
-7. **Camera-Based Perception** — Replace ground truth TF lookups with a vision model (fine-tuned on sim images)
-8. **Domain Randomization** — Randomize task board layouts, lighting, cable poses in Isaac Sim for robust training
+### Gazebo Ionic Install Commands (run in WSL2)
+```bash
+sudo curl -sSL https://packages.osrfoundation.org/gazebo.gpg \
+  -o /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
 
-### Submission Pipeline
-9. **Containerize Policy** — Build Docker image based on `docker/aic_model/Dockerfile` template
-10. **Local Verification** — `docker compose -f docker/docker-compose.yaml up`
-11. **Push to ECR** — Tag + push to `973918476471.dkr.ecr.us-east-1.amazonaws.com/aic-team/<team_name>:v1`
-12. **Register on Portal** — Paste OCI Image URI at aiforindustrychallenge.ai
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] \
+  http://packages.osrfoundation.org/gazebo/ubuntu-stable noble main" \
+  | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+
+sudo apt update && sudo apt install -y gz-ionic
+sudo apt install -y ros-kilted-ros-gz   # only if system-level ROS 2 is installed
+
+gz sim --version  # verify
+```
+
+### AIC Development Pipeline
+4. **Get Portal Access Sorted** — Need onboarding email with AWS keys + ECR URI
+5. **Test AIC Simulation Locally** — Launch full sim with `pixi run ros2 launch aic_bringup aic_gz_bringup.launch.py`
+6. **Test WaveArm Policy** — Verify end-to-end pipeline works
+7. **Run CheatCode with ground_truth:=true** — Collect demonstration trajectories
+8. **Train ACT Policy** — Use LeRobot on demo data
+9. **Camera-Based Perception** — Replace ground truth TF with vision model
+10. **Domain Randomization** — Randomize board layouts, lighting, cable poses
+11. **Containerize & Submit** — Docker build + push to ECR
+
+### Other Projects
+- **SO-101 Lego Assembly** — LeRobot setup done, need Isaac Sim integration
+- **Interceptor Drone** — ArduPilot/ROS, not started
 
 ---
 
 ## Key Technical Details
 
 ### The Core Contract — What You Implement
-
-Your entire submission is a Python class that subclasses `Policy` and implements `insert_cable()`:
 
 ```python
 from aic_model.policy import Policy
@@ -238,18 +309,17 @@ Gazebo → ros_gz_bridge → camera/sensor topics → aic_adapter (sync @ 20Hz)
 ```
 
 ### CheatCode Strategy (The Gold Standard to Beat)
-1. **Phase 1 — Approach (5 seconds):** Smoothly interpolate (100 steps x 50ms) from current pose to 20cm above the target port, simultaneously aligning plug orientation via quaternion slerp
-2. **Phase 2 — Descent/Insertion:** Lower 0.5mm per 50ms (10mm/s) with PI controller on XY to keep plug centered. Continue until 15mm past port surface.
-3. **Hold for 5 seconds** to let connector stabilize.
+1. **Phase 1 — Approach (5s):** Interpolate (100 steps x 50ms) from current pose to 20cm above target port, align plug via quaternion slerp
+2. **Phase 2 — Descent/Insertion:** Lower 0.5mm per 50ms (10mm/s) with PI controller on XY. Continue until 15mm past port surface.
+3. **Hold 5 seconds** to stabilize.
 4. Uses ground truth TF frames (FORBIDDEN in eval — must replace with camera-based perception)
 
 ### RunACT Strategy (Neural Network Reference)
-- Downloads pre-trained ACT model from HuggingFace (`grkw/aic_act_policy`)
-- 26-dim state vector: TCP pose(7) + TCP vel(6) + TCP error(6) + joint positions(7)
+- Pre-trained ACT model from HuggingFace (`grkw/aic_act_policy`)
+- 26-dim state: TCP pose(7) + TCP vel(6) + TCP error(6) + joint positions(7)
 - 3 camera images resized to 0.25x, normalized per-camera mean/std
-- 7-dim action output: 6 velocity components + gripper
-- Runs at ~4Hz (250ms per inference step) for 30 seconds
-- Uses MODE_VELOCITY (velocity commands, not position)
+- 7-dim action: 6 velocity + gripper
+- ~4Hz (250ms/inference), 30 seconds, MODE_VELOCITY
 
 ### Key Competition Rules
 - Ground truth TF data ONLY for training, FORBIDDEN in evaluation
@@ -259,25 +329,62 @@ Gazebo → ros_gz_bridge → camera/sensor topics → aic_adapter (sync @ 20Hz)
 - Container images audited
 - Zenoh ACL enforced
 
-### Key URLs
+---
+
+## Quick Start Commands
+
+### WSL2 Navigation
+```bash
+automaton          # cd to ~/projects/Project-Automaton
+aic                # cd to AIC workspace
+automaton-win      # cd to Windows copy via /mnt/c/
+mujoco             # activate MuJoCo venv (MJX, Warp, JAX)
+```
+
+### AIC Simulation
+```bash
+# Enter AIC workspace
+aic
+
+# Launch full simulation
+pixi run ros2 launch aic_bringup aic_gz_bringup.launch.py \
+    ground_truth:=true \
+    spawn_task_board:=true \
+    spawn_cable:=true \
+    start_aic_engine:=true
+
+# Run a policy
+pixi run ros2 run aic_model aic_model \
+    --ros-args -p policy:=my_package.MyPolicy
+```
+
+### MuJoCo Viewer
+```bash
+mujoco                          # activate venv
+python3 -m mujoco.viewer        # open interactive 3D viewer
+```
+
+### Docker Submission
+```bash
+aic
+docker compose -f docker/docker-compose.yaml build model
+docker compose -f docker/docker-compose.yaml up   # test locally
+```
+
+### VS Code (from WSL2)
+```bash
+automaton
+code .              # opens VS Code Remote-WSL with full intellisense
+```
+
+---
+
+## Key URLs
 - **Portal/Leaderboard:** https://aiforindustrychallenge.ai
 - **Event Page:** https://www.intrinsic.ai/events/ai-for-industry-challenge
 - **GitHub Repo:** https://github.com/intrinsic-dev/aic
+- **Our Repo:** https://github.com/Ice-Citron/Project-Automaton
 - **Community Forum:** https://discourse.openrobotics.org/c/competitions/ai-for-industry-challenge/
-- **Issues:** https://github.com/intrinsic-dev/aic/issues
-
-### Tech Stack
-| Component | Technology |
-|-----------|-----------|
-| Simulation | NVIDIA Isaac Sim + Isaac Lab, Gazebo (AIC default) |
-| Robotics | LeRobot (HuggingFace), ROS 2 Kilted |
-| ML | PyTorch, ACT, Diffusion Policy, LeRobot |
-| Physics | Bullet-Featherstone (Gazebo), PhysX (Isaac) |
-| Build | Pixi, colcon, CMake |
-| Submission | Docker/OCI, AWS ECR, Zenoh middleware |
-| Compute | Local: NVIDIA RTX 5090 (Windows), Cloud: RTX 6000 Pro / L40 (Linux) |
-
----
 
 ## Competition Timeline
 
@@ -289,37 +396,10 @@ Gazebo → ros_gz_bridge → camera/sensor topics → aic_adapter (sync @ 20Hz)
 
 ---
 
-## Quick Start Commands
+## Known Issues / Gotchas
 
-```bash
-# Run the AIC simulation locally (from aic/ root)
-pixi run ros2 launch aic_bringup aic_gz_bringup.launch.py \
-    ground_truth:=true \
-    spawn_task_board:=true \
-    spawn_cable:=true \
-    start_aic_engine:=true
-
-# Run your policy
-pixi run ros2 run aic_model aic_model \
-    --ros-args -p policy:=my_package.MyPolicy
-
-# Build submission container
-docker compose -f docker/docker-compose.yaml build model
-
-# Test locally
-docker compose -f docker/docker-compose.yaml up
-
-# Regenerate the ROS 2 graph
-cd Intrinsic-AI && python3 aic_ros2_graph.py
-```
-
----
-
-## Notes for Next Session
-
-- The `Intrinsic-AI/` folder has the ROS 2 computation graph (regenerate with `python3 aic_ros2_graph.py`)
-- The `References/aic/` folder is the cloned AIC toolkit — don't modify organizer-provided files
-- `SO-101/` has the LeRobot setup for the Lego assembly project (separate from AIC but shares techniques)
-- Isaac Lab tutorials are in `Lychee-AI/` — Tutorials 1-3 are done, continue from there for Isaac Sim integration
-- All 3 projects (AIC cable insertion, SO-101 Lego assembly, drone) share the ROS 2 + Isaac Sim + LeRobot stack
-- The old `"Black Projects"` (with space) directory is stale — everything lives under `Black_Projects` (underscore)
+1. **WSL2 sudo from Claude Code** — `sudo` prompts for password interactively, Claude Code can't see the prompt. Run sudo commands manually in your own WSL2 terminal.
+2. **Windows PATH leaks into WSL2** — `Program Files (x86)` parentheses break bash commands. Use `--noprofile --norc` or clean PATH when running WSL commands from Windows.
+3. **AIC pixi.toml is linux-64 only** — `pixi install` will fail on Windows. Use WSL2 for all AIC work.
+4. **ROS 2 Zenoh warnings** — "Unable to connect to a Zenoh router" is normal when no router is running. Not an error.
+5. **Two MuJoCo versions** — 3.5.0 in pixi (AIC workspace), 3.6.0 in `~/envs/mujoco` venv. Both work. Use pixi's for AIC-specific work, venv for standalone MJX/Warp experiments.
