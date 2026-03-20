@@ -1,6 +1,6 @@
 # Project Automaton — Session Handoff & Continuation Guide
 
-> **Last updated:** 2026-03-16 (Session 3)
+> **Last updated:** 2026-03-20 (Session 4)
 > **Purpose:** Drop this file into a new Claude Code chat to seamlessly continue where we left off.
 
 ---
@@ -15,7 +15,7 @@
 
 ---
 
-## Environment Setup (COMPLETED 2026-03-16)
+## Environment Setup (COMPLETED 2026-03-20)
 
 ### Dual-System Architecture
 
@@ -45,9 +45,12 @@ WSL2 (~/projects/Project-Automaton)
 | **MuJoCo Warp** (NVIDIA native) | WSL2 `~/envs/mujoco` venv | 3.6.0 | Working |
 | **JAX + CUDA 12** | WSL2 `~/envs/mujoco` venv | 0.9.1 | Working (sees RTX 5090) |
 | **Warp** | WSL2 `~/envs/mujoco` venv | 1.12.0 | Working (sees RTX 5090, sm_120) |
-| **Gazebo Ionic** | WSL2 system | — | **NOT INSTALLED** |
+| **Gazebo Ionic** | WSL2 system | 9.5.0 | Working |
 | **ROS 2 Kilted (system-level)** | WSL2 system | — | **NOT INSTALLED** (optional, pixi handles it for AIC) |
 | **GPU** | WSL2 passthrough | RTX 5090, CUDA 12.9, 32GB VRAM | Working |
+| **Docker Engine CE** | WSL2 native (systemd) | 29.x | Working (replaced Docker Desktop — see Session 4 notes) |
+| **Distrobox** | WSL2 system | 1.7.0 | Installed (not used — see Session 4 notes) |
+| **NVIDIA Container Toolkit** | WSL2 system | 1.19.0 | Working (`docker run --gpus all` sees RTX 5090) |
 
 ### MuJoCo vs MJX vs MuJoCo Warp
 
@@ -83,13 +86,15 @@ WINDOWS:
   C:\Users\StarForge-SF\AppData\Local\pixi\bin\pixi.exe            ← Windows pixi
   C:\Users\StarForge-SF\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1  ← PS aliases
 
-WSL2:
+WSL2 (ALL WORK HAPPENS HERE):
   ~/projects/Project-Automaton/                    ← Working repo (build/run/train)
   ~/projects/Project-Automaton/References/aic/     ← AIC workspace (pixi installed)
   ~/projects/Project-Automaton/References/aic/.pixi/  ← Pixi environment (ROS 2, MuJoCo 3.5.0, deps)
+  ~/projects/Project-Automaton/aic_results/        ← Scoring results (gitignored, timestamped subdirs)
   ~/envs/mujoco/                                   ← venv with MuJoCo 3.6.0 + MJX + Warp + JAX CUDA
   ~/.pixi/bin/pixi                                 ← Pixi binary
   ~/.bashrc                                        ← Aliases
+  /etc/docker/daemon.json                          ← Docker config with NVIDIA runtime
 ```
 
 ### WSL2 Performance Note
@@ -129,11 +134,15 @@ WSL2:
 │   ├── Nvidia-Issac-Lab/       ← Feb-04 through March-04 .ipynb study logs
 │   └── PythonRobotics/         ← Reference robotics code
 │
+├── aic_results/                ← AIC scoring results (gitignored)
+│   ├── wavearm_20260320_185331/  ← Per-run timestamped subdirectories
+│   │   ├── scoring.yaml          ← Scoring output
+│   │   └── bag_trial_*/          ← ROS 2 bag files per trial
+│   └── ...
+│
 ├── Intrinsic-AI/               ← AIC competition working directory
-│   ├── aic_ros2_graph.py       ← ROS 2 computation graph generator (Graphviz)
-│   ├── aic_ros2_graph.png      ← Rendered graph (raster)
-│   ├── aic_ros2_graph.pdf      ← Rendered graph (vector — use this for zoom)
-│   └── aic_ros2_graph.gv       ← Raw DOT source
+│   ├── ros2_graph/             ← ROS 2 computation graph (Graphviz)
+│   └── Ideas/                  ← Research notes
 │
 ├── References/
 │   ├── Intrinsic AI Notes/     ← Manual notes
@@ -199,43 +208,85 @@ WSL2:
 - Set up PowerShell aliases (black, automaton, aic, liberty) on Windows
 - Created WSL2-Automaton.url shortcut on Windows
 
+### Session 4 (2026-03-20) — Docker Setup + First AIC Run
+- **Gazebo Ionic** already installed (v9.5.0) — confirmed working
+- Installed **Distrobox** + **NVIDIA Container Toolkit** in WSL2
+- Discovered **Docker Desktop's `--network host` is broken on WSL2** — containers run in a separate `docker-desktop` VM, so `--network host` shares that VM's network, NOT WSL2's network. This means the Zenoh router inside the container was unreachable from pixi-run policies outside.
+- **Replaced Docker Desktop with Docker Engine CE** installed natively in WSL2 (via systemd). This fixed `--network host` — container ports are now directly accessible from WSL2.
+- Created patched AIC eval image with `locales` package (needed for distrobox init, but ultimately not used)
+- **Successfully ran WaveArm policy end-to-end** — 3 trials completed with scoring:
+  - Trial 1: 31.7 pts (Tier1=1, Tier2=20.8, Tier3=9.9)
+  - Trial 2: 40.9 pts (Tier1=1, Tier2=21.3, Tier3=18.6)
+  - Trial 3: 1.0 pts (Tier1=1, Tier2=0, Tier3=0)
+  - **Total: 73.6 pts** (across 3 trials, not per-trial — WaveArm just waves, doesn't try to insert)
+- Results + bag files saved to `~/projects/Project-Automaton/aic_results/` (gitignored)
+- Results are now stored in timestamped subdirectories to prevent overwriting (e.g., `WaveArm_20260320_185331/`)
+- Discovered GPU-accelerated rendering requires `GALLIUM_DRIVER=d3d12` + `LD_LIBRARY_PATH=/usr/lib/wsl/lib` env vars (without these, Gazebo falls back to llvmpipe CPU rendering)
+- Zenoh timestamp errors are cosmetic (WSL2 clock drift) — do not affect functionality
+- Created `wsl-rshared.service` systemd unit for `mount --make-rshared /` (needed for distrobox/Docker)
+
 ---
 
 ## What's Left To Do
 
-### Immediate (Environment)
-1. **Install Gazebo Ionic** (system-level in WSL2) — commands below
-2. **Verify MuJoCo viewer** works visually (`python3 -m mujoco.viewer` — needs WSLg display)
-3. **Verify Gazebo GUI** works visually (`gz sim`)
-
-### Gazebo Ionic Install Commands (run in WSL2)
-```bash
-sudo curl -sSL https://packages.osrfoundation.org/gazebo.gpg \
-  -o /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
-
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] \
-  http://packages.osrfoundation.org/gazebo/ubuntu-stable noble main" \
-  | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-
-sudo apt update && sudo apt install -y gz-ionic
-sudo apt install -y ros-kilted-ros-gz   # only if system-level ROS 2 is installed
-
-gz sim --version  # verify
-```
+### Immediate Next Steps
+1. **Run CheatCode with ground_truth:=true** — See the gold-standard insertion and collect demo trajectories
+2. **Run remaining example policies** — GentleGiant, SpeedDemon, WallToucher, WallPresser
+3. **Verify MuJoCo viewer** works visually (`python3 -m mujoco.viewer` — needs WSLg display)
+4. **Get Portal Access Sorted** — Need onboarding email with AWS keys + ECR URI
 
 ### AIC Development Pipeline
-4. **Get Portal Access Sorted** — Need onboarding email with AWS keys + ECR URI
-5. **Test AIC Simulation Locally** — Launch full sim with `pixi run ros2 launch aic_bringup aic_gz_bringup.launch.py`
-6. **Test WaveArm Policy** — Verify end-to-end pipeline works
-7. **Run CheatCode with ground_truth:=true** — Collect demonstration trajectories
-8. **Train ACT Policy** — Use LeRobot on demo data
-9. **Camera-Based Perception** — Replace ground truth TF with vision model
-10. **Domain Randomization** — Randomize board layouts, lighting, cable poses
+5. **Create custom policy skeleton** — Copy WaveArm, build own runner script
+6. **Build dataset logger** — Log cameras, joints, wrench, task metadata per trial
+7. **Collect GT-labeled training data** — Use CheatCode with ground_truth:=true
+8. **Train perception model** — Port/plug detection from camera images
+9. **Build modular controller** — Approach + align + insert phases, separate from perception
+10. **Train ACT/learned policy** — Use LeRobot on demo data
 11. **Containerize & Submit** — Docker build + push to ECR
 
 ### Other Projects
 - **SO-101 Lego Assembly** — LeRobot setup done, need Isaac Sim integration
 - **Interceptor Drone** — ArduPilot/ROS, not started
+
+---
+
+## First Results — WaveArm Baseline (2026-03-20)
+
+WaveArm just waves the arm — it doesn't attempt insertion. This is the floor baseline.
+
+| Trial | Tier 1 (model) | Tier 2 (trajectory) | Tier 3 (insertion) | Total |
+|-------|----------------|--------------------|--------------------|-------|
+| 1 | 1 | 20.8 | 9.9 (0.09m from port) | 31.7 |
+| 2 | 1 | 21.3 | 18.6 (0.06m from port) | 40.9 |
+| 3 | 1 | 0 | 0 (0.24m from port) | 1.0 |
+| **Sum** | | | | **73.6** |
+
+Key observations:
+- Tier 1 = 1 means model loaded successfully
+- Tier 2 varies because WaveArm accidentally gets close to the port on some trials (proximity-based scoring)
+- Tier 3 proximity score can be up to 25 pts just for getting close, even without insertion
+- Full insertion = 75 pts (Tier 3), which CheatCode should achieve
+
+---
+
+## 100-Hour Development Plan (from GPT-Pro analysis)
+
+The full plan is in the user's notes. Summary of phases:
+
+| Hours | Goal | Status |
+|-------|------|--------|
+| 0-10 | Run all example policies, understand scoring | **IN PROGRESS** — WaveArm done, CheatCode next |
+| 10-20 | Create own policy skeleton + one-command runner | Not started |
+| 20-30 | Build dataset logger (cameras, joints, wrench, metadata) | Not started |
+| 30-40 | Collect GT-labeled training data (CheatCode + ground_truth) | Not started |
+| 40-50 | Separate controller from perception (modular architecture) | Not started |
+| 50-60 | Train smallest visual baseline (port/plug detection) | Not started |
+| 60-70 | HANDLOOM cable tracing integration | Not started |
+| 70-80 | LeRobot/RunACT/ACT++ learned policy | Not started |
+| 80-90 | MuJoCo + MJWarp controller ablation lab | Not started |
+| 90-100 | Bake-off comparison, prune, pick main branch | Not started |
+
+**Key milestone:** First non-GT policy that earns Tier 3 > 0 in Gazebo AIC.
 
 ---
 
@@ -341,22 +392,60 @@ automaton-win      # cd to Windows copy via /mnt/c/
 mujoco             # activate MuJoCo venv (MJX, Warp, JAX)
 ```
 
-### AIC Simulation
+### AIC Simulation (Two Terminals)
 ```bash
-# Enter AIC workspace
-aic
+# Terminal 1: Start eval environment (Docker)
+# Set POLICY_NAME and GT before running (used for timestamped results dir)
+POLICY_NAME=WaveArm   # or CheatCode, GentleGiant, etc.
+GT=false              # true for CheatCode training, false for eval
+RUN_DIR=~/projects/Project-Automaton/aic_results/${POLICY_NAME}_$(date +%Y%m%d_%H%M%S)
+mkdir -p "$RUN_DIR"
 
-# Launch full simulation
-pixi run ros2 launch aic_bringup aic_gz_bringup.launch.py \
-    ground_truth:=true \
-    spawn_task_board:=true \
-    spawn_cable:=true \
-    start_aic_engine:=true
+docker run -it --rm \
+  --name aic_eval \
+  --network host \
+  --gpus all \
+  -e DISPLAY=:0 \
+  -e WAYLAND_DISPLAY=wayland-0 \
+  -e XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir \
+  -e PULSE_SERVER=/mnt/wslg/PulseServer \
+  -e GALLIUM_DRIVER=d3d12 \
+  -e LD_LIBRARY_PATH=/usr/lib/wsl/lib \
+  -e AIC_RESULTS_DIR=/aic_results \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -v /mnt/wslg:/mnt/wslg \
+  -v /usr/lib/wsl:/usr/lib/wsl \
+  -v "$RUN_DIR":/aic_results \
+  --device /dev/dxg \
+  ghcr.io/intrinsic-dev/aic/aic_eval:latest \
+  ground_truth:=$GT start_aic_engine:=true
 
-# Run a policy
+# Terminal 2: Run a policy (pixi, from WSL2 directly)
+# Wait for "No node with name 'aic_model' found. Retrying..." then run:
+cd ~/projects/Project-Automaton/References/aic
 pixi run ros2 run aic_model aic_model \
-    --ros-args -p policy:=my_package.MyPolicy
+    --ros-args -p use_sim_time:=true \
+    -p policy:=aic_example_policies.ros.$POLICY_NAME
 ```
+
+### Quick-Run Examples
+```bash
+# WaveArm (no GT needed)
+POLICY_NAME=WaveArm GT=false
+
+# CheatCode (NEEDS GT)
+POLICY_NAME=CheatCode GT=true
+
+# GentleGiant / SpeedDemon / WallToucher / WallPresser (no GT needed)
+POLICY_NAME=GentleGiant GT=false
+```
+
+### Key Docker Flags Explained
+- `--network host` — REQUIRES Docker Engine CE (Docker Desktop breaks this on WSL2)
+- `GALLIUM_DRIVER=d3d12` + `LD_LIBRARY_PATH=/usr/lib/wsl/lib` — GPU-accelerated rendering via Mesa d3d12
+- `--device /dev/dxg` + WSLg mounts — GPU + display passthrough
+- `AIC_RESULTS_DIR=/aic_results` + `-v ~/projects/Project-Automaton/aic_results:/aic_results` — persist results outside container
+- `ground_truth:=true` — enables GT TF frames (for training/debugging ONLY, forbidden in eval)
 
 ### MuJoCo Viewer
 ```bash
@@ -403,3 +492,8 @@ code .              # opens VS Code Remote-WSL with full intellisense
 3. **AIC pixi.toml is linux-64 only** — `pixi install` will fail on Windows. Use WSL2 for all AIC work.
 4. **ROS 2 Zenoh warnings** — "Unable to connect to a Zenoh router" is normal when no router is running. Not an error.
 5. **Two MuJoCo versions** — 3.5.0 in pixi (AIC workspace), 3.6.0 in `~/envs/mujoco` venv. Both work. Use pixi's for AIC-specific work, venv for standalone MJX/Warp experiments.
+6. **Docker Desktop `--network host` is BROKEN on WSL2** — Docker Desktop runs `dockerd` in a separate `docker-desktop` VM, so `--network host` shares that VM's network, not WSL2's. This makes Zenoh router unreachable from pixi policies. **Fix: Use Docker Engine CE installed natively in WSL2** (already done in Session 4).
+7. **Zenoh timestamp errors** — Constant `ERROR zenoh::net::routing::dispatcher::pubsub: Error treating timestamp` spam in both terminals during AIC runs. This is **cosmetic** — caused by WSL2 clock drift between Zenoh nodes. Does NOT affect trial execution or scoring. Just makes logs hard to read.
+8. **Gazebo falls back to CPU rendering (llvmpipe) by default** — Without `GALLIUM_DRIVER=d3d12` and `LD_LIBRARY_PATH=/usr/lib/wsl/lib`, Gazebo uses software rendering in Docker. Very laggy. The working docker run command in Quick Start already includes these.
+9. **WSL2 mount propagation** — `distrobox create` fails with "path / is mounted on / but it is not a shared mount". Fix: `sudo mount --make-rshared /` or use the `wsl-rshared.service` systemd unit (created in Session 4).
+10. **AIC eval container needs `locales` package** — Distrobox init fails without it. We patched the image: `ghcr.io/intrinsic-dev/aic/aic_eval:patched` (local only). Not needed if running Docker directly instead of distrobox.

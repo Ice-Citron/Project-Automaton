@@ -2,6 +2,9 @@
 .DS_Store
 .claude
 
+# AIC results (large bag files, scoring outputs)
+aic_results/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
