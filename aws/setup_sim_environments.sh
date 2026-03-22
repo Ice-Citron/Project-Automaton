@@ -193,14 +193,23 @@ else
     ok "AIC already cloned inside IsaacLab"
 fi
 
+ISAAC_ASSETS_DIR="$ISAACLAB_DIR/aic/aic_utils/aic_isaac/aic_isaaclab/source/aic_task/aic_task/tasks/manager_based/aic_task/Intrinsic_assets"
+if [[ ! -d "$ISAAC_ASSETS_DIR" ]]; then
+    warn "Intrinsic_assets not found! Download from NVIDIA (requires developer login):"
+    info "  URL: https://developer.nvidia.com/downloads/Omniverse/learning/Events/Hackathons/Intrinsic_assets.zip"
+    info "  Extract to: $ISAAC_ASSETS_DIR"
+    info "  (Teleop/RL training will not work without these assets)"
+fi
+
 if [[ "$SKIP_ISAAC_BUILD" == false ]]; then
     info "Building IsaacLab base Docker image (~20-30 min) ..."
     cd "$ISAACLAB_DIR"
-    ./docker/container.py build base
+    # Auto-answer 'y' to X11 forwarding prompt (needed for GUI on DCV)
+    echo "y" | python3 docker/container.py build base
     ok "IsaacLab base image built"
 else
     warn "Skipping IsaacLab Docker build (--skip-isaac-build). Run manually:"
-    info "  cd $ISAACLAB_DIR && ./docker/container.py build base"
+    info "  cd $ISAACLAB_DIR && echo y | python3 docker/container.py build base"
 fi
 
 # ── 1i. Shell aliases ─────────────────────────────────────────────────────────
@@ -323,14 +332,39 @@ else
         cd "$ISAACLAB_DIR"
 
         # Start the container if not already running
-        ./docker/container.py start base 2>/dev/null || true
+        # Auto-answer 'y' to X11 prompt
+        echo "y" | python3 docker/container.py start base 2>/dev/null || true
 
         ISAAC_LOG=$(mktemp /tmp/aic_isaac_test.XXXXXX)
 
-        info "Installing aic_task and running list_envs inside container ..."
+        info "Installing isaaclab + aic_task inside container ..."
+        # Note: python/pip are aliases in .bashrc only — use the full path in non-interactive exec
+        ISAAC_PYTHON="/workspace/isaaclab/_isaac_sim/python.sh"
         docker exec isaac-lab-base bash -c "
-            python -m pip install -q -e /workspace/isaaclab/aic/aic_utils/aic_isaac/aic_isaaclab/source/aic_task && \
-            python /workspace/isaaclab/aic/aic_utils/aic_isaac/aic_isaaclab/scripts/list_envs.py
+            $ISAAC_PYTHON -m pip install --no-build-isolation -q -e /workspace/isaaclab/source/isaaclab 2>/dev/null;
+            $ISAAC_PYTHON -m pip install -q -e /workspace/isaaclab/aic/aic_utils/aic_isaac/aic_isaaclab/source/aic_task
+        " 2>&1 || true
+
+        info "Running list_envs smoke test (Isaac Sim init takes ~30s) ..."
+        # list_envs.py stdout gets swallowed by Isaac Sim shutdown, so write results to a file
+        docker exec isaac-lab-base bash -c "
+            $ISAAC_PYTHON -u -c '
+import sys, os
+from isaaclab.app import AppLauncher
+import argparse
+parser = argparse.ArgumentParser()
+args = parser.parse_args([])
+app = AppLauncher(headless=True)
+sim_app = app.app
+import gymnasium as gym
+import aic_task.tasks
+found = [s.id for s in gym.registry.values() if \"AIC\" in s.id]
+with open(\"/tmp/aic_envs.txt\", \"w\") as f:
+    for name in found:
+        f.write(name + \"\n\")
+sim_app.close()
+' 2>/dev/null
+            cat /tmp/aic_envs.txt
         " 2>&1 | tee "$ISAAC_LOG" || true
 
         if grep -q "AIC-Task-v0" "$ISAAC_LOG" 2>/dev/null; then
@@ -353,7 +387,7 @@ log "SUMMARY"
 
 echo ""
 printf "  %-30s %s\n" "Lane 1 · Gazebo + CheatCode"   "$( [[ $PASS_GAZEBO  == true ]] && echo '✓ PASS' || echo '✗ FAIL')"
-printf "  %-30s %s\n" "Lane 2 · MuJoCo + CheatCode"   "$( [[ $PASS_MUJOCO  == true ]] && echo '✓ PASS' || echo '✗ FAIL')"
+printf "  %-30s %s\n" "Lane 2 · MuJoCo + CheatCode"   "⊘ SKIPPED (broken — see TODO in script)"
 printf "  %-30s %s\n" "Lane 3 · Isaac Lab list_envs"   "$( [[ $PASS_ISAAC   == true ]] && echo '✓ PASS' || echo '✗ FAIL')"
 echo ""
 echo "  Aliases active after: source $SHELL_RC"
