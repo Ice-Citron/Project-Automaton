@@ -149,3 +149,7 @@ Thanks for any guidance. The physics side of the MuJoCo mirror is working great 
 
 
 pixi run python3 ~/projects/Project-Automaton/Intrinsic-AI/tools/mujoco/mujoco_policies.py --policy interactive  
+
+
+
+pixi run python3 ~/projects/Project-Automaton/Intrinsic-AI/tools/mujoco/mujoco_policies.py --policy cheatcode --duration 30
