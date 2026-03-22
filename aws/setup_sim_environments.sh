@@ -318,6 +318,12 @@ export DBX_CONTAINER_MANAGER=docker
 # Allow Docker/distrobox containers to use the X11 display
 xhost +local:docker 2>/dev/null || true
 
+# Ensure distrobox aic_eval exists (may have been destroyed by docker rm)
+if ! distrobox list 2>/dev/null | grep -q "aic_eval"; then
+    info "Recreating distrobox aic_eval ..."
+    distrobox create -r --nvidia -i ghcr.io/intrinsic-dev/aic/aic_eval:latest aic_eval
+fi
+
 mkdir -p "$RESULTS_DIR"
 # aic_engine writes scoring.yaml to $HOME/aic_results/ by default (inside distrobox
 # the host $HOME is shared). We check both the default and AIC_RESULTS_DIR locations.
