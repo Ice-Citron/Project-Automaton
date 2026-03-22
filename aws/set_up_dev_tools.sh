@@ -10,8 +10,11 @@ npm install -g @anthropic-ai/claude-code --unsafe-perm || true
 
 # Add NodeJS to PATH
 export PATH=$PATH:/usr/local/bin
-export PATH=$PATH:/usr/local/nvm/versions/node/v24.13.0/bin
-echo 'export PATH=$PATH:/usr/local/bin' >> ~/.bashrc
+export NVM_DIR="/usr/local/nvm"
+export PATH=$NVM_DIR/versions/node/v24.13.0/bin:$PATH
+echo 'export PATH=$PATH' >> ~/.bashrc
+
+# Source .bashrc
 source ~/.bashrc
 
 # Test Claude Code
