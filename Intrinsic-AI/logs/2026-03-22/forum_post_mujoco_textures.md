@@ -153,3 +153,97 @@ pixi run python3 ~/projects/Project-Automaton/Intrinsic-AI/tools/mujoco/mujoco_p
 
 
 pixi run python3 ~/projects/Project-Automaton/Intrinsic-AI/tools/mujoco/mujoco_policies.py --policy cheatcode --duration 30
+
+
+
+
+colcon build --packages-select mujoco_vendor sdformat_mjcf mujoco_ros2_control \
+  aic_mujoco --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+---
+
+
+● There they are:
+  - Gazebo: References/aic/aic_bringup/launch/aic_gz_bringup.launch.py
+  - MuJoCo: References/aic/aic_utils/aic_mujoco/launch/aic_mujoco_bringup.launch.py
+
+  Both are ROS 2 launch files — same structure, different simulator backend.
+
+  To verify your current MuJoCo setup (the visual-only test without ROS 2), yes:
+
+  cd ~/projects/Project-Automaton/References/aic
+  pixi run python3
+  ~/projects/Project-Automaton/Intrinsic-AI/tools/mujoco/mujoco_policies.py --policy
+  cheatcode --duration 30
+
+  This tests that:
+  1. Scene loads with textures + glass walls + light panels
+  2. Robot arm actually moves (shoulder/elbow, not just wrist)
+  3. Arm approaches the SC plug target via IK
+
+  But this is just the visual sanity check. The real MuJoCo pipeline
+  (aic_mujoco_bringup.launch.py) needs system ROS 2 Kilted + colcon build to run. That's
+  the next blocker if you want the original CheatCode.py running in MuJoCo.
+
+
+
+
+---
+
+  # 2. Install Gazebo apt dependencies
+  sudo apt -y install $(sort -u $(find . -iname 'packages-noble.apt' -o -iname \
+  'packages.apt' | grep -v '/\.git/') | sed '/gz\|sdf/d' | tr '\n' ' ')
+
+  # 3. Install ROS 2 dependencies
+  cd ~/ws_aic
+  rosdep install --from-paths src --ignore-src --rosdistro kilted -yr --skip-keys \
+  "gz-cmake3 DART libogre-dev libogre-next-2.3-dev rosetta"
+
+  # 4. Install Zenoh middleware
+  sudo apt install -y ros-kilted-rmw-zenoh-cpp python3-pynput
+
+  # 5. Build everything (this will take 20-40 minutes)
+  source /opt/ros/kilted/setup.bash
+  GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release \
+  --merge-install --symlink-install --packages-ignore lerobot_robot_aic
+
+
+
+
+
+
+
+---
+  rm -rf ~/ws_aic/install ~/ws_aic/build ~/ws_aic/log
+  source /opt/ros/kilted/setup.bash
+  GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release \
+  --merge-install --symlink-install --packages-ignore lerobot_robot_aic
+
+
+
+
+
+
+
+
+  Terminal 1 — Zenoh router:
+  source ~/ws_aic/install/setup.bash
+  export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+  ros2 run rmw_zenoh_cpp rmw_zenohd
+
+  Terminal 2 — MuJoCo sim:
+  source ~/ws_aic/install/setup.bash
+  export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+  ros2 launch aic_mujoco aic_mujoco_bringup.launch.py
+
+  Terminal 3 — CheatCode policy:
+  source ~/ws_aic/install/setup.bash
+  export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+  ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p \
+  policy:=aic_example_policies.ros.WaveArm
+
+  Terminal 4 - ...
+  source ~/ws_aic/install/setup.bash
+  export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+  ros2 run aic_engine aic_engine --ros-args -p use_sim_time:=true -p \
+  config_file_path:=$HOME/ws_aic/install/share/aic_engine/config/sample_config.yaml
