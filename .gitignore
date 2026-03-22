@@ -1,3 +1,6 @@
+# AWS security files
+aws/*.pem
+
 # MacOS Security Files
 .DS_Store
 .claude
