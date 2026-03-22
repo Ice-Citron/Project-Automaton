@@ -1,5 +1,3 @@
-git clone https://github.com/Ice-Citron/Project-Automaton
-
 # Install npm@11.12.0
 sudo apt install -y nodejs
 sudo npm install -g npm@11.12.0
