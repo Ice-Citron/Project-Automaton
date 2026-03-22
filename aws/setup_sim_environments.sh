@@ -95,6 +95,7 @@ fi
 sudo apt-get install -y \
     curl wget git ca-certificates gnupg lsb-release \
     build-essential python3 python3-pip \
+    g++-14 gcc-14 \
     distrobox \
     x11-xserver-utils \
     tmux
@@ -188,9 +189,9 @@ if ! dpkg -l python3-sdformat16 &>/dev/null 2>&1; then
 fi
 ok "ROS 2 Kilted + sdformat bindings ready"
 
-# Python deps for SDF→MJCF converter (from setup-transcript.md)
+# Python deps for SDF→MJCF converter and colcon package scanning
 info "Installing Python deps for SDF→MJCF conversion ..."
-pip3 install --break-system-packages dm-control trimesh pycollada 2>/dev/null || true
+pip3 install --break-system-packages dm-control trimesh pycollada toml 2>/dev/null || true
 
 # ── 1g. MuJoCo colcon build ───────────────────────────────────────────────────
 # Ref: aic_utils/aic_mujoco/README.md "Import MuJoCo Dependencies" + Part 2
@@ -219,36 +220,18 @@ mkdir -p "$WS_AIC/build/sdformat_mjcf"
 ln -sf "$WS_AIC/src/gazebo/gz-mujoco/sdformat_mjcf/README.md" \
        "$WS_AIC/build/sdformat_mjcf/README.md"
 
-# Skip packages that only run inside the eval container (they need the full
-# Gazebo build env which we don't have on the host). The MuJoCo lane only
-# needs: mujoco_vendor, mujoco_ros2_control, aic_mujoco, aic_controller,
-# aic_interfaces, sdformat_mjcf, and their deps.
+# Skip eval-only Gazebo packages. MuJoCo needs aic_adapter + aic_controller
+# + aic_bringup (config files) in addition to mujoco_vendor/mujoco_ros2_control.
+# Use GCC 14 for C++20 <format> support (aic_adapter requires it).
+export CC=/usr/bin/gcc-14 CXX=/usr/bin/g++-14
 GZ_BUILD_FROM_SOURCE=1 colcon build \
     --cmake-args -DCMAKE_BUILD_TYPE=Release \
+                 -DCMAKE_C_COMPILER=/usr/bin/gcc-14 \
+                 -DCMAKE_CXX_COMPILER=/usr/bin/g++-14 \
     --merge-install \
     --symlink-install \
-    --packages-ignore lerobot_robot_aic aic_adapter aic_gazebo aic_scoring \
-                      aic_engine aic_bringup
+    --packages-ignore lerobot_robot_aic aic_gazebo aic_scoring aic_engine
 ok "MuJoCo workspace built"
-
-# aic_bringup can't be built (its exec_depends aic_gazebo/aic_engine are eval-only)
-# but aic_mujoco_bringup.launch.py needs two config files from it. Install manually.
-info "Installing aic_bringup config stubs for MuJoCo ..."
-mkdir -p "$WS_AIC/install/share/aic_bringup/config" \
-         "$WS_AIC/install/share/aic_bringup/rviz" \
-         "$WS_AIC/install/share/ament_index/resource_index/packages"
-cp "$WS_AIC/src/aic/aic_bringup/config/aic_ros2_controllers.yaml" \
-   "$WS_AIC/install/share/aic_bringup/config/"
-cp "$WS_AIC/src/aic/aic_bringup/rviz/aic.rviz" \
-   "$WS_AIC/install/share/aic_bringup/rviz/"
-cat > "$WS_AIC/install/share/aic_bringup/package.xml" << 'PKGXML'
-<?xml version="1.0"?>
-<package format="3"><name>aic_bringup</name><version>0.0.0</version>
-<description>stub for MuJoCo lane</description>
-<maintainer email="x@x">x</maintainer><license>Apache-2.0</license></package>
-PKGXML
-touch "$WS_AIC/install/share/ament_index/resource_index/packages/aic_bringup"
-ok "aic_bringup config stubs installed"
 
 # ── 1h. IsaacLab ─────────────────────────────────────────────────────────────
 # Ref: aic_utils/aic_isaac/README.md
