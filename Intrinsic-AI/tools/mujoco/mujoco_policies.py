@@ -82,17 +82,44 @@ def get_tcp_mat(model, data):
     return np.eye(3)
 
 
-def pd_control(data, joint_info, targets, kp=300.0, kd=30.0):
-    """PD joint-space control with per-joint scaling."""
-    scales = [2.0, 3.0, 2.0, 0.8, 0.8, 0.5]
-    limits = [150.0, 150.0, 150.0, 28.0, 28.0, 28.0]
+def setup_joint_dynamics(model):
+    """Add armature and damping to joints for realistic UR5e behavior.
+
+    Without these, the robot is infinitely stiff and unstable.
+    Real UR5e motors have significant rotor inertia and friction.
+    """
+    armature_vals = [5.0, 5.0, 3.0, 1.0, 1.0, 0.5]  # kg*m^2 rotor inertia
+    damping_vals = [10.0, 10.0, 5.0, 2.0, 2.0, 1.0]   # Nm*s/rad viscous friction
+
+    for i, name in enumerate(ARM_JOINT_NAMES):
+        jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
+        if jid >= 0:
+            dof = model.jnt_dofadr[jid]
+            model.dof_armature[dof] = armature_vals[i]
+            model.dof_damping[dof] = damping_vals[i]
+
+
+def pd_control(data, joint_info, targets, kp=300.0, kd=30.0, gravity_comp=None):
+    """PD joint-space control with gravity compensation.
+
+    The UR5e shoulder_lift needs ~17Nm and elbow needs ~27Nm just to
+    counteract gravity. We add qfrc_bias as feedforward.
+    """
     for i, name in enumerate(ARM_JOINT_NAMES):
         ji = joint_info[name]
         err = targets[i] - data.qpos[ji["qpos_addr"]]
         vel = data.qvel[ji["qvel_addr"]]
-        torque = scales[i] * kp * err - scales[i] * kd * vel
-        torque = np.clip(torque, -limits[i], limits[i])
+        # PD torque
+        torque = kp * err - kd * vel
+        # Add gravity compensation (feedforward)
+        if gravity_comp is not None:
+            torque += gravity_comp[i]
         data.ctrl[i] = torque
+
+
+def get_gravity_comp(model, data, joint_info):
+    """Get gravity compensation torques for arm joints."""
+    return np.array([data.qfrc_bias[joint_info[n]["qvel_addr"]] for n in ARM_JOINT_NAMES])
 
 
 def ik_step(model, data, joint_info, target_pos, target_quat=None, step_size=0.5):
@@ -169,7 +196,8 @@ def policy_wavearm(model, data, joint_info, t):
     targets = HOME_QPOS.copy()
     targets[0] += 0.5 * wave
     targets[1] += 0.2 * wave
-    pd_control(data, joint_info, targets)
+    gc = get_gravity_comp(model, data, joint_info)
+    pd_control(data, joint_info, targets, gravity_comp=gc)
 
 
 def policy_cheatcode(model, data, joint_info, t, state):
@@ -213,7 +241,8 @@ def policy_cheatcode(model, data, joint_info, t, state):
         dist = np.linalg.norm(tcp - above)
 
         q_target = ik_step(model, data, joint_info, above, step_size=0.8)
-        pd_control(data, joint_info, q_target, kp=400.0, kd=40.0)
+        gc = get_gravity_comp(model, data, joint_info)
+        pd_control(data, joint_info, q_target, kp=400.0, kd=40.0, gravity_comp=gc)
 
         if dist < 0.02 or phase_time > 8.0:
             state["phase"] = "descend"
@@ -227,7 +256,8 @@ def policy_cheatcode(model, data, joint_info, t, state):
         descend_target[2] += state["hover_height"]
 
         q_target = ik_step(model, data, joint_info, descend_target, step_size=0.6)
-        pd_control(data, joint_info, q_target, kp=400.0, kd=40.0)
+        gc = get_gravity_comp(model, data, joint_info)
+        pd_control(data, joint_info, q_target, kp=400.0, kd=40.0, gravity_comp=gc)
 
         tcp = get_tcp_pos(model, data)
         if state["hover_height"] <= -0.015 or phase_time > 10.0:
@@ -238,7 +268,8 @@ def policy_cheatcode(model, data, joint_info, t, state):
 
     elif state["phase"] == "hold":
         # Hold final position
-        pd_control(data, joint_info, state["hold_q"], kp=500.0, kd=50.0)
+        gc = get_gravity_comp(model, data, joint_info)
+        pd_control(data, joint_info, state["hold_q"], kp=500.0, kd=50.0, gravity_comp=gc)
 
         if phase_time > 5.0 and state.get("done_printed") is None:
             print(f"CheatCode: complete (t={t:.1f}s)")
@@ -261,14 +292,18 @@ def main():
 
     joint_info = get_joint_info(model)
 
+    # Add realistic joint dynamics (armature + damping)
+    setup_joint_dynamics(model)
+
     # Initialize at home position
     set_arm_qpos(model, data, joint_info, HOME_QPOS)
     mujoco.mj_forward(model, data)
 
-    # Settle with high-gain PD
+    # Settle with high-gain PD + gravity compensation
     print("Settling...")
-    for _ in range(500):
-        pd_control(data, joint_info, HOME_QPOS, kp=400.0, kd=40.0)
+    for _ in range(1000):
+        gc = get_gravity_comp(model, data, joint_info)
+        pd_control(data, joint_info, HOME_QPOS, kp=500.0, kd=50.0, gravity_comp=gc)
         mujoco.mj_step(model, data)
     mujoco.mj_forward(model, data)
 
