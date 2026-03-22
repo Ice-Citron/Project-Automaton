@@ -1,3 +1,6 @@
 Sun Mar 22 17:52:38 2026
 ERROR: Load model error: Error: Error opening file '/home/ubuntu/ws_aic/install/share/aic_mujoco/mjcf/2526a91bb24bdc844d851a8061563c5c49b4bfe1445f84f9fcebda7b03d12c17_base_eSeries_UR5e_066-mesh-dd543f6667f50bd4643e49be303d92a0352f3d30.obj'
 
+Sun Mar 22 17:58:40 2026
+ERROR: Load model error: Error: Error opening file '/home/ubuntu/ws_aic/install/share/aic_mujoco/mjcf/shoulder-a83506202923a888b5b5d3c371edb9e13f236336.stl'
+

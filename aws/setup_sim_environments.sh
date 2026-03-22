@@ -154,84 +154,26 @@ else
     ok "distrobox aic_eval already exists"
 fi
 
-# ── 1f. ROS 2 Kilted host install (for MuJoCo colcon build) ──────────────────
-# Ref: aic_utils/aic_mujoco/README.md Part 2
-log "1f · ROS 2 Kilted (host, for MuJoCo colcon build)"
-if [[ ! -f /opt/ros/kilted/setup.bash ]]; then
-    sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
-        -o /usr/share/keyrings/ros-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
-        http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" \
-        | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
-    sudo apt-get update -qq
-    sudo apt-get install -y ros-kilted-ros-base python3-rosdep python3-colcon-common-extensions python3-vcstool
-    sudo rosdep init 2>/dev/null || true
-    rosdep update
-else
-    ok "ROS 2 Kilted already installed"
-fi
-# Ensure python3-vcstool from ROS repo (NOT ubuntu vcstool which conflicts)
-if ! dpkg -l python3-vcstool 2>/dev/null | grep -q "^ii"; then
-    sudo apt-get install -y python3-vcstool
-fi
+# ##########################################################################
+# # TODO: LANE 2 (MuJoCo) IS BROKEN — DO NOT UNCOMMENT UNTIL FIXED
+# #
+# # The SDF→MJCF conversion pipeline produces mismatched mesh hashes and
+# # broken physics (robot falls over, task board missing, glass panes gone).
+# # The add_cable_plugin.py script + sdf2mjcf converter generate XML that
+# # references mesh filenames with different hash prefixes than what the
+# # converter actually outputs. Even when hashes match, the resulting scene
+# # has incorrect joint positions and missing collision geometry.
+# #
+# # To fix: upstream needs to ship pre-built MJCF files with matching meshes,
+# # or the sdf2mjcf + add_cable_plugin.py pipeline needs debugging.
+# #
+# # What was here: steps 1f (ROS 2 Kilted install), 1f+ (sdformat bindings),
+# # 1g (MuJoCo colcon build with mujoco_vendor, mujoco_ros2_control, gcc-14).
+# # See git history for the full implementation.
+# ##########################################################################
 
-# OSRF Gazebo repo — sdformat Python bindings for SDF→MJCF conversion
-# Ref: aic_utils/aic_mujoco/README.md Part 1 Prerequisites
-log "1f+ · sdformat Python bindings"
-if ! dpkg -l python3-sdformat16 &>/dev/null 2>&1; then
-    sudo wget -q https://packages.osrfoundation.org/gazebo.gpg \
-        -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] \
-        http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" \
-        | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-    sudo apt-get update -qq
-    sudo apt-get install -y python3-sdformat16 python3-gz-math9
-fi
-ok "ROS 2 Kilted + sdformat bindings ready"
-
-# Python deps for SDF→MJCF converter and colcon package scanning
-info "Installing Python deps for SDF→MJCF conversion ..."
-pip3 install --break-system-packages dm-control trimesh pycollada toml 2>/dev/null || true
-
-# ── 1g. MuJoCo colcon build ───────────────────────────────────────────────────
-# Ref: aic_utils/aic_mujoco/README.md "Import MuJoCo Dependencies" + Part 2
-log "1g · MuJoCo workspace colcon build"
-info "Importing mujoco.repos ..."
-cd "$WS_AIC/src"
-vcs import --skip-existing < aic/aic_utils/aic_mujoco/mujoco.repos
-
-# Check for conflicting MUJOCO env vars from previous installs
-if env | grep -qE '^MUJOCO_(PATH|DIR|PLUGIN_PATH)'; then
-    warn "Existing MUJOCO_* vars found — these can conflict with mujoco_vendor:"
-    env | grep -E '^MUJOCO_(PATH|DIR|PLUGIN_PATH)' || true
-    warn "Remove them from $SHELL_RC and run: source $SHELL_RC"
-fi
-
-info "Running rosdep ..."
-cd "$WS_AIC"
-source /opt/ros/kilted/setup.bash
-rosdep install --from-paths src --ignore-src --rosdistro kilted -yr \
-    --skip-keys "gz-cmake3 DART libogre-dev libogre-next-2.3-dev"
-
-info "colcon build (Release, ~10 min) ..."
-# Fix: sdformat_mjcf setup.py reads README.md relative to the build dir, but
-# colcon builds out-of-tree. Symlink the README so the build can find it.
-mkdir -p "$WS_AIC/build/sdformat_mjcf"
-ln -sf "$WS_AIC/src/gazebo/gz-mujoco/sdformat_mjcf/README.md" \
-       "$WS_AIC/build/sdformat_mjcf/README.md"
-
-# Skip eval-only Gazebo packages. MuJoCo needs aic_adapter + aic_controller
-# + aic_bringup (config files) in addition to mujoco_vendor/mujoco_ros2_control.
-# Use GCC 14 for C++20 <format> support (aic_adapter requires it).
-export CC=/usr/bin/gcc-14 CXX=/usr/bin/g++-14
-GZ_BUILD_FROM_SOURCE=1 colcon build \
-    --cmake-args -DCMAKE_BUILD_TYPE=Release \
-                 -DCMAKE_C_COMPILER=/usr/bin/gcc-14 \
-                 -DCMAKE_CXX_COMPILER=/usr/bin/g++-14 \
-    --merge-install \
-    --symlink-install \
-    --packages-ignore lerobot_robot_aic aic_gazebo aic_scoring aic_engine
-ok "MuJoCo workspace built"
+: # ── 1f. ROS 2 Kilted host install (for MuJoCo colcon build) ── SKIPPED (BROKEN)
+: # ── 1g. MuJoCo colcon build ── SKIPPED (BROKEN)
 
 # ── 1h. IsaacLab ─────────────────────────────────────────────────────────────
 # Ref: aic_utils/aic_isaac/README.md
@@ -356,158 +298,15 @@ else
     info "Or manually: distrobox enter -r aic_eval -- /entrypoint.sh ground_truth:=true start_aic_engine:=true"
 fi
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PHASE 3 — GENERATE MuJoCo scene (requires one Gazebo launch to export SDF)
-# ─────────────────────────────────────────────────────────────────────────────
-# Ref: aic_utils/aic_mujoco/README.md Part 1 "Scene Generation Workflow"
-# Ref: Intrinsic-AI/setup-transcript.md Section 8
-log "SETUP · Generate MuJoCo scene from Gazebo SDF"
-
-MUJOCO_SCENE="$WS_AIC/src/aic/aic_utils/aic_mujoco/mjcf/scene.xml"
-
-if [[ -f "$MUJOCO_SCENE" ]]; then
-    ok "MuJoCo scene.xml already exists — skipping generation"
-else
-    # Step 1: Export SDF from Gazebo inside the aic_eval container
-    # Using docker run directly (more reliable for SDF export than distrobox)
-    info "Launching Gazebo briefly inside aic_eval to export /tmp/aic.sdf ..."
-    docker rm -f aic_sdf_export 2>/dev/null || true
-    docker run -d --rm --name aic_sdf_export \
-        --network host --gpus all \
-        ghcr.io/intrinsic-dev/aic/aic_eval:latest \
-        spawn_task_board:=true spawn_cable:=true cable_type:=sfp_sc_cable \
-        attach_cable_to_gripper:=true ground_truth:=true start_aic_engine:=false
-
-    info "Waiting 25s for Gazebo to export /tmp/aic.sdf ..."
-    sleep 25
-
-    # Step 2: Copy SDF and UR5e meshes out of the container
-    if docker cp aic_sdf_export:/tmp/aic.sdf /tmp/aic.sdf 2>/dev/null; then
-        ok "Copied /tmp/aic.sdf from container"
-    else
-        warn "docker cp failed — SDF may not have been exported yet"
-        info "Waiting another 15s ..."
-        sleep 15
-        docker cp aic_sdf_export:/tmp/aic.sdf /tmp/aic.sdf 2>/dev/null || true
-    fi
-
-    # Copy UR5e meshes (only exist inside the container)
-    # Ref: setup-transcript.md step 4
-    mkdir -p "$HOME/aic_mujoco_world"
-    docker cp aic_sdf_export:/ws_aic/install/share/ur_description "$HOME/aic_mujoco_world/ur_description" 2>/dev/null || true
-
-    docker rm -f aic_sdf_export 2>/dev/null || true
-
-    if [[ -f /tmp/aic.sdf ]]; then
-        # Step 3: Fix exported SDF
-        # Ref: aic_utils/aic_mujoco/README.md "Fix Exported SDF"
-        info "Fixing exported SDF URI corruption ..."
-
-        # Issue 1: <urdf-string> in mesh URIs (official fix)
-        sed -i 's|file://<urdf-string>/model://|model://|g' /tmp/aic.sdf
-
-        # Issue 2: Broken relative mesh URIs (official fix)
-        sed -i 's|file:///lc_plug_visual.glb|model://LC Plug/lc_plug_visual.glb|g'   /tmp/aic.sdf
-        sed -i 's|file:///sc_plug_visual.glb|model://SC Plug/sc_plug_visual.glb|g'   /tmp/aic.sdf
-        sed -i 's|file:///sfp_module_visual.glb|model://SFP Module/sfp_module_visual.glb|g' /tmp/aic.sdf
-        sed -i 's|file:///model://|model://|g' /tmp/aic.sdf
-
-        # Fix Docker-internal paths → host paths (from setup-transcript.md)
-        sed -i "s|/ws_aic/install/share/aic_assets|$AIC_REPO/aic_assets|g" /tmp/aic.sdf
-        sed -i "s|/ws_aic/install/share/aic_bringup|$AIC_REPO/aic_bringup|g" /tmp/aic.sdf
-        sed -i "s|file:///ws_aic/install/share/ur_description|file://$HOME/aic_mujoco_world/ur_description|g" /tmp/aic.sdf
-
-        # Step 4: Convert SDF → MJCF
-        # Ref: aic_utils/aic_mujoco/README.md "Convert SDF to MJCF"
-        info "Converting SDF → MJCF ..."
-        source "$WS_AIC/install/setup.bash"
-        mkdir -p "$HOME/aic_mujoco_world"
-        sdf2mjcf /tmp/aic.sdf "$HOME/aic_mujoco_world/aic_world.xml"
-
-        # Step 5: Copy all generated assets to the mjcf dir
-        # Ref: aic_utils/aic_mujoco/README.md "Organize MJCF Files"
-        cp "$HOME/aic_mujoco_world/"* "$WS_AIC/src/aic/aic_utils/aic_mujoco/mjcf/" 2>/dev/null || true
-
-        # Step 6: Run add_cable_plugin.py (must run WITHOUT ROS workspace sourced)
-        # Ref: aic_utils/aic_mujoco/README.md "Generate Final MJCF Files"
-        info "Running add_cable_plugin.py ..."
-        env -i HOME="$HOME" PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
-            python3 "$WS_AIC/src/aic/aic_utils/aic_mujoco/scripts/add_cable_plugin.py" \
-                --input  "$WS_AIC/src/aic/aic_utils/aic_mujoco/mjcf/aic_world.xml" \
-                --output "$WS_AIC/src/aic/aic_utils/aic_mujoco/mjcf/aic_world.xml" \
-                --robot_output "$WS_AIC/src/aic/aic_utils/aic_mujoco/mjcf/aic_robot.xml" \
-                --scene_output "$WS_AIC/src/aic/aic_utils/aic_mujoco/mjcf/scene.xml"
-
-        # Rebuild aic_mujoco to pick up the new scene files
-        info "Rebuilding aic_mujoco package ..."
-        cd "$WS_AIC"
-        source /opt/ros/kilted/setup.bash
-        colcon build --packages-select aic_mujoco --symlink-install
-
-        ok "MuJoCo scene.xml generated"
-    else
-        fail "Could not get /tmp/aic.sdf — MuJoCo scene generation failed"
-    fi
-fi
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PHASE 4 — TEST: MuJoCo + CheatCode
-# ─────────────────────────────────────────────────────────────────────────────
-# Ref: aic_utils/aic_mujoco/README.md "Launching MuJoCo with ros2_control"
-log "TEST 2/3 · MuJoCo — CheatCode"
-
-if [[ ! -f "$MUJOCO_SCENE" ]]; then
-    fail "MuJoCo test skipped — scene.xml not found (SDF export failed above)"
-else
-    tmux kill-session -t aic_mujoco_test 2>/dev/null || true
-
-    # Pane 0: Zenoh router
-    tmux new-session -d -s aic_mujoco_test -x 220 -y 50
-    tmux send-keys -t aic_mujoco_test:0 \
-        "source $WS_AIC/install/setup.bash && \
-         export RMW_IMPLEMENTATION=rmw_zenoh_cpp && \
-         export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true' && \
-         ros2 run rmw_zenoh_cpp rmw_zenohd" Enter
-    sleep 5
-
-    # Pane 1: MuJoCo bringup (ros2_control — same controller interface as Gazebo)
-    tmux split-window -v -t aic_mujoco_test:0
-    tmux send-keys -t aic_mujoco_test:0.1 \
-        "export DISPLAY=$DISPLAY && \
-         source $WS_AIC/install/setup.bash && \
-         export RMW_IMPLEMENTATION=rmw_zenoh_cpp && \
-         export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true' && \
-         ros2 launch aic_mujoco aic_mujoco_bringup.launch.py" Enter
-
-    info "Waiting 20s for MuJoCo + ros2_control to initialise ..."
-    sleep 20
-
-    # Pane 2: CheatCode policy via pixi
-    tmux split-window -v -t aic_mujoco_test:0.1
-    MUJOCO_LOG=$(mktemp /tmp/aic_mujoco_test.XXXXXX)
-    tmux send-keys -t aic_mujoco_test:0.2 \
-        "export PATH=$HOME/.pixi/bin:\$PATH && \
-         cd $WS_AIC/src/aic && \
-         pixi run ros2 run aic_model aic_model \
-         --ros-args -p use_sim_time:=true \
-         -p policy:=aic_example_policies.ros.CheatCode 2>&1 | tee $MUJOCO_LOG" Enter
-
-    info "Running CheatCode in MuJoCo for ${TEST_TIMEOUT_MUJOCO}s ..."
-    sleep "$TEST_TIMEOUT_MUJOCO"
-
-    # Success = aic_model started and no fatal errors in its output
-    if [[ -f "$MUJOCO_LOG" ]] && grep -q "aic_model" "$MUJOCO_LOG" 2>/dev/null \
-       && ! grep -qi "traceback\|fatal" "$MUJOCO_LOG" 2>/dev/null; then
-        PASS_MUJOCO=true
-        ok "MuJoCo+CheatCode PASSED — ran for ${TEST_TIMEOUT_MUJOCO}s without errors"
-    else
-        fail "MuJoCo test: unexpected output or aic_model did not start"
-        [[ -f "$MUJOCO_LOG" ]] && tail -20 "$MUJOCO_LOG" >&2 || true
-    fi
-    rm -f "$MUJOCO_LOG"
-
-    tmux kill-session -t aic_mujoco_test 2>/dev/null || true
-fi
+# ##########################################################################
+# # TODO: PHASE 3 & 4 (MuJoCo scene generation + test) — BROKEN
+# # See TODO note above in Lane 2 install section for details.
+# # The SDF→MJCF pipeline (sdf2mjcf + add_cable_plugin.py) produces
+# # broken scenes with wrong joint positions and missing geometry.
+# ##########################################################################
+log "SKIPPED · MuJoCo scene generation + test (BROKEN — see TODO in script)"
+warn "Lane 2 (MuJoCo) is disabled. SDF→MJCF conversion pipeline needs fixing."
+PASS_MUJOCO=false
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PHASE 5 — TEST: Isaac Lab — list_envs smoke test
