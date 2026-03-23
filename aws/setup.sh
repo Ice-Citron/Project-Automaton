@@ -9,6 +9,10 @@
 set -eo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+cd "$HOME/Project-Automaton"
+echo "=== Submodules ==="
+git submodule update --init --recursive
 SKIP_INSTALL=false
 SKIP_ISAAC_BUILD=false
 TEST_GUI=false

@@ -57,6 +57,8 @@ grep -q '/.pixi/bin' "$SHELL_RC" 2>/dev/null \
 
 # ── Pixi workspace ──────────────────────────────────────────────────────────
 echo "=== Pixi workspace ==="
+# bwrap needs setuid for rattler-build's sandbox to create user namespaces
+[[ -u /usr/bin/bwrap ]] || sudo chmod u+s /usr/bin/bwrap
 mkdir -p "$WS/src"
 [[ -e "$WS/src/aic" ]] || ln -s "$AIC" "$WS/src/aic"
 cd "$WS/src/aic" && pixi install
