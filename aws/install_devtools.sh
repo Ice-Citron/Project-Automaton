@@ -1,17 +1,52 @@
 #!/usr/bin/env bash
-# install_devtools.sh — Install dev tools (Node, Claude Code)
-set -eo pipefail
+# install_devtools.sh — Install dev tools (Node via NVM, Claude Code)
 
-sudo chown $USER:$USER ~/.bashrc
+set -euo pipefail
 
-echo "=== Node.js + npm ==="
-if ! command -v node &>/dev/null; then
-    sudo apt-get update -qq
-    sudo apt-get install -y nodejs npm
+echo "=== Installing prerequisites ==="
+sudo apt-get update -qq
+sudo apt-get install -y curl ca-certificates build-essential
+
+# --------------------------------------------------
+# Install NVM (Node Version Manager)
+# --------------------------------------------------
+if [ ! -d "$HOME/.nvm" ]; then
+  echo "=== Installing NVM ==="
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 fi
-echo 'export PATH="$(npm bin -g):$PATH"' >> ~/.bashrc
-sudo npm install -g npm@latest 2>/dev/null || true
 
-echo "=== Claude Code ==="
-npm install -g @anthropic-ai/claude-code --unsafe-perm 2>/dev/null || true
-echo "Done. Run 'claude' to start."
+# Load NVM into current shell
+export NVM_DIR="$HOME/.nvm"
+# shellcheck disable=SC1090
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+# --------------------------------------------------
+# Install Node (LTS)
+# --------------------------------------------------
+echo "=== Installing Node.js (LTS) ==="
+nvm install --lts
+nvm use --lts
+nvm alias default 'lts/*'
+
+# --------------------------------------------------
+# Install Claude Code
+# --------------------------------------------------
+echo "=== Installing Claude Code ==="
+npm install -g @anthropic-ai/claude-code
+
+# --------------------------------------------------
+# Ensure PATH is correct in future shells
+# --------------------------------------------------
+if ! grep -q 'NVM_DIR' "$HOME/.bashrc"; then
+  echo "=== Updating ~/.bashrc ==="
+  cat << 'EOF' >> "$HOME/.bashrc"
+
+# NVM setup
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+EOF
+fi
+
+echo "=== Installation complete ==="
+echo "Run: source ~/.bashrc"
+echo "Then: claude"
