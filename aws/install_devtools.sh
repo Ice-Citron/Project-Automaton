@@ -2,6 +2,8 @@
 # install_devtools.sh — Install dev tools (Node, Claude Code)
 set -eo pipefail
 
+sudo chown $USER:$USER ~/.bashrc
+
 echo "=== Node.js + npm ==="
 if ! command -v node &>/dev/null; then
     sudo apt-get update -qq
