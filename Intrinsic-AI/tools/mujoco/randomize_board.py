@@ -41,12 +41,13 @@ SC_RAILS = {
 
 # ── Mount rails (zones 3-4): left side Y=-0.10625, right side Y=0.10625 ─
 MOUNT_RAILS = {
+    # Exact positions from task_board.urdf.xacro
     "lc_mount_rail_0":  {"x": 0.01,   "y": -0.10625, "z": 0.012},
-    "sfp_mount_rail_0": {"x": 0.055,  "y": -0.10625, "z": 0.012},
+    "sfp_mount_rail_0": {"x": 0.055,  "y": -0.10625, "z": 0.01},
     "sc_mount_rail_0":  {"x": 0.1,    "y": -0.10625, "z": 0.012},
     "lc_mount_rail_1":  {"x": 0.01,   "y": 0.10625,  "z": 0.012},
-    "sfp_mount_rail_1": {"x": 0.055,  "y": 0.10625,  "z": 0.012},
-    "sc_mount_rail_1":  {"x": 0.0985, "y": 0.10625,  "z": 0.012},
+    "sfp_mount_rail_1": {"x": 0.055,  "y": 0.10625,  "z": 0.01},
+    "sc_mount_rail_1":  {"x": 0.0985, "y": 0.10625,  "z": 0.01},
 }
 
 # ── Orientation limits (radians) ──────────────────────────────────────

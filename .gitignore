@@ -5,7 +5,7 @@
 # AIC results (large bag files, scoring outputs)
 aic_results/
 
-# Competitor reference repos (cloned for study, not our code)
+# Reference repos (cloned for study, not tracked)
 References/IntrinsicAIChallenge/
 
 # Byte-compiled / optimized / DLL files

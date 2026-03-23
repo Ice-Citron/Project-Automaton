@@ -245,5 +245,5 @@ colcon build --packages-select mujoco_vendor sdformat_mjcf mujoco_ros2_control \
   Terminal 4 - ...
   source ~/ws_aic/install/setup.bash
   export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-  ros2 run aic_engine aic_engine --ros-args -p use_sim_time:=true -p \
-  config_file_path:=$HOME/ws_aic/install/share/aic_engine/config/sample_config.yaml
+  ros2 run aic_engine aic_engine --ros-args -p use_sim_time:=true -p config_file_path:= \
+  $HOME/ws_aic/install/aic_engine/share/aic_engine/config/sample_config.yaml
