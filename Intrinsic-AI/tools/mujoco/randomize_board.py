@@ -210,19 +210,10 @@ def randomize(xml_path, output_path, seed=None,
     nic_template = find_body(root, "nic_card_mount_0::nic_card_mount_link")
     sc_template = find_body(root, "sc_port_0::sc_port_link")
 
-    # ── Get mesh/material info for mount components ────────────────
+    # ── Get mesh/material info for mount fixture visuals ────────────
     sfp_mount_meshes, sfp_mount_mats = get_visual_geom_info(root, "sfp_mount_visual")
-    # SC port uses the same textured meshes
-    sc_port_meshes, sc_port_mats = get_visual_geom_info(root, "sc_port_visual")
-    # SC plug (from cable end)
-    sc_plug_meshes, sc_plug_mats = get_visual_geom_info(root, "sc_plug_visual")
-    # SFP module (from cable end)
-    sfp_mod_meshes, sfp_mod_mats = get_visual_geom_info(root, "sfp_module_visual")
-    # LC plug (from cable end)
-    lc_plug_meshes, lc_plug_mats = get_visual_geom_info(root, "lc_plug_visual")
 
-    print(f"Found meshes: SFP mount={len(sfp_mount_meshes)}, SC port={len(sc_port_meshes)}, "
-          f"SC plug={len(sc_plug_meshes)}, SFP module={len(sfp_mod_meshes)}, LC plug={len(lc_plug_meshes)}")
+    print(f"Found SFP mount meshes: {len(sfp_mount_meshes)}")
 
     # ── Decide how many of each component ──────────────────────────
     if nic_count is None:
@@ -273,15 +264,13 @@ def randomize(xml_path, output_path, seed=None,
             task_board.append(new_sc)
             print(f"  SC rail {rail_idx}: translation={translation:.4f}")
 
-    # ── Zones 3-4: Mount Rails with real meshes ────────────────────
+    # ── Zones 3-4: Mount Rails (empty fixtures only) ───────────────
+    # In the actual competition, mounts start EMPTY. Plugs are cable
+    # endpoints held by the gripper. The robot INSERTS plugs into mounts.
+    # So we only place the mount fixtures, not plugs inside them.
     mount_id = 0
 
-    # Each rail type ONLY hosts its designated component:
-    #   lc_mount_rail  → LC mount + LC plug inside
-    #   sfp_mount_rail → SFP mount + SFP module inside
-    #   sc_mount_rail  → SC mount + SC plug inside
-
-    # SFP mounts + SFP modules on sfp_mount rails
+    # SFP mounts on sfp_mount rails (uses official converter meshes)
     sfp_rails = [r for r in MOUNT_RAILS if "sfp_mount" in r]
     chosen_sfp = random.sample(sfp_rails, random.randint(1, len(sfp_rails)))
     for rail_name in chosen_sfp:
@@ -290,22 +279,11 @@ def randomize(xml_path, output_path, seed=None,
         if sfp_mount_meshes:
             body = make_mount_body("sfp_mount", rail_name, translation, 0.0,
                                    sfp_mount_meshes, sfp_mount_mats, mount_id)
-            # Nest SFP module inside the mount
-            if sfp_mod_meshes:
-                for i, (mesh, mat) in enumerate(zip(sfp_mod_meshes, sfp_mod_mats)):
-                    geom = ET.SubElement(body, "geom")
-                    geom.set("name", f"sfp_mod_in_mount_{mount_id}_{i}")
-                    geom.set("type", "mesh")
-                    geom.set("mesh", mesh)
-                    if mat:
-                        geom.set("material", mat)
-                    geom.set("contype", "0")
-                    geom.set("conaffinity", "0")
             task_board.append(body)
-            print(f"  SFP mount+module on {rail_name}: trans={translation:.4f}")
+            print(f"  SFP mount on {rail_name}: trans={translation:.4f}")
             mount_id += 1
 
-    # LC mounts + LC plugs on lc_mount rails
+    # LC mounts on lc_mount rails
     lc_rails = [r for r in MOUNT_RAILS if "lc_mount" in r]
     chosen_lc = random.sample(lc_rails, random.randint(1, len(lc_rails)))
     for rail_name in chosen_lc:
@@ -313,22 +291,11 @@ def randomize(xml_path, output_path, seed=None,
                                       LIMITS["mount_rail"]["max"])
         body = make_mount_body("lc_mount", rail_name, translation, 0.0,
                                ["manual_lc_mount"], ["mount_grey"], mount_id)
-        # Nest LC plug inside the mount
-        if lc_plug_meshes:
-            for i, (mesh, mat) in enumerate(zip(lc_plug_meshes, lc_plug_mats)):
-                geom = ET.SubElement(body, "geom")
-                geom.set("name", f"lc_plug_in_mount_{mount_id}_{i}")
-                geom.set("type", "mesh")
-                geom.set("mesh", mesh)
-                if mat:
-                    geom.set("material", mat)
-                geom.set("contype", "0")
-                geom.set("conaffinity", "0")
         task_board.append(body)
-        print(f"  LC mount+plug on {rail_name}: trans={translation:.4f}")
+        print(f"  LC mount on {rail_name}: trans={translation:.4f}")
         mount_id += 1
 
-    # SC mounts + SC plugs on sc_mount rails
+    # SC mounts on sc_mount rails
     sc_rails_z34 = [r for r in MOUNT_RAILS if "sc_mount" in r]
     chosen_sc = random.sample(sc_rails_z34, random.randint(1, len(sc_rails_z34)))
     for rail_name in chosen_sc:
@@ -336,19 +303,8 @@ def randomize(xml_path, output_path, seed=None,
                                       LIMITS["mount_rail"]["max"])
         body = make_mount_body("sc_mount", rail_name, translation, 0.0,
                                ["manual_sc_mount"], ["mount_grey"], mount_id)
-        # Nest SC plug inside the mount
-        if sc_plug_meshes:
-            for i, (mesh, mat) in enumerate(zip(sc_plug_meshes, sc_plug_mats)):
-                geom = ET.SubElement(body, "geom")
-                geom.set("name", f"sc_plug_in_mount_{mount_id}_{i}")
-                geom.set("type", "mesh")
-                geom.set("mesh", mesh)
-                if mat:
-                    geom.set("material", mat)
-                geom.set("contype", "0")
-                geom.set("conaffinity", "0")
         task_board.append(body)
-        print(f"  SC mount+plug on {rail_name}: trans={translation:.4f}")
+        print(f"  SC mount on {rail_name}: trans={translation:.4f}")
         mount_id += 1
 
     # ── Write output ───────────────────────────────────────────────
