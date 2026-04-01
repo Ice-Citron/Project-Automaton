@@ -71,6 +71,10 @@ if ! grep -q 'ros-kilted-rosbag2-storage-default-plugins' pixi.toml 2>/dev/null;
     echo "Adding rosbag2 default storage plugins (required for ros2 bag record)..."
     pixi add ros-kilted-rosbag2-storage-default-plugins
 fi
+if ! grep -q 'ros-kilted-rosbag2-py' pixi.toml 2>/dev/null; then
+    echo "Adding rosbag2 Python API (rosbag_to_lerobot_aic.py)..."
+    pixi add ros-kilted-rosbag2-py
+fi
 pixi install
 
 # ── Lane 1: Gazebo distrobox ────────────────────────────────────────────────
