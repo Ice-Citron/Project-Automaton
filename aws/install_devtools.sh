@@ -37,6 +37,22 @@ export NVM_DIR="$HOME/.nvm"
 EOF
 fi
 
+# add hf hub login
 echo "=== Done ==="
 echo "Run: source ~/.bashrc"
 echo "Then: claude"
+
+echo "=== Hugging Face CLI (pipx) ==="
+pipx ensurepath
+export PATH="$HOME/.local/bin:$PATH"
+if ! command -v hf &>/dev/null; then
+    pipx install "huggingface_hub[cli]"
+fi
+export PATH="$HOME/.local/bin:$PATH"
+grep -q '.local/bin' "$SHELL_RC" 2>/dev/null \
+    || echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
+echo ""
+echo "  Hugging Face: open a new shell (or: source ~/.bashrc), then run once:"
+echo "    hf auth login"
+echo "  Non-interactive / CI: export HF_TOKEN=hf_..."
+echo ""
