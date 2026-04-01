@@ -35,3 +35,9 @@ distrobox enter -r aic_eval
 # STEP 3: IN A SEPARATE TERMINAL
 cd ~/ws_aic/src/aic
 pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WaveArm
+
+# STEP 4: Run Ground Truth
+/entrypoint.sh ground_truth:=true start_aic_engine:=true
+
+pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.CheatCode
+
