@@ -61,7 +61,17 @@ echo "=== Pixi workspace ==="
 [[ -u /usr/bin/bwrap ]] || sudo chmod u+s /usr/bin/bwrap
 mkdir -p "$WS/src"
 [[ -e "$WS/src/aic" ]] || ln -s "$AIC" "$WS/src/aic"
-cd "$WS/src/aic" && pixi install
+cd "$WS/src/aic"
+# Host-side `pixi run ros2 bag record` needs ros2bag + storage plugins (not in ros-core alone).
+if ! grep -q 'ros-kilted-ros2bag' pixi.toml 2>/dev/null; then
+    echo "Adding ros-kilted-ros2bag for ros2 bag CLI..."
+    pixi add ros-kilted-ros2bag
+fi
+if ! grep -q 'ros-kilted-rosbag2-storage-default-plugins' pixi.toml 2>/dev/null; then
+    echo "Adding rosbag2 default storage plugins (required for ros2 bag record)..."
+    pixi add ros-kilted-rosbag2-storage-default-plugins
+fi
+pixi install
 
 # ── Lane 1: Gazebo distrobox ────────────────────────────────────────────────
 echo "=== Lane 1: Gazebo (distrobox) ==="
