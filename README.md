@@ -1,3 +1,15 @@
+---                                                                                   
+⚠️  This repository is no longer actively updated.                                                                              
+                                                                                                                               
+I have since joined a new team for the AI for Industry Challenge (AIC), and all ongoing development has moved to a private     
+repository. This repo contains my earlier solo/duo work on the competition including MuJoCo task board randomization, Isaac Lab
+ integration attempts, and Gazebo setup scripts.                                                                               
+                                                                                                                               
+I will post a public update on the outcome of the competition in approximately two months (around June 2026), including whether
+ we qualified or not. Thank you for your interest!
+     
+---
+
 # NVIDIA Isaac Sim & Physical AI: The Lego-Assembling Arm
 
 > **A personal roadmap and codebase dedicated to mastering Reinforcement Learning (RL), hardware design, NVIDIA Isaac Sim, and autonomous robotics.**
