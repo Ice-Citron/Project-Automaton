@@ -1,3 +1,6 @@
+# INSTALL RANGERS REPO!!! OFC
+git clone https://github.com/rangers-intrinsic/aic-rangers.git
+
 #### STEP 1: installs #################
 
 sudo nvidia-ctk runtime configure --runtime=docker
