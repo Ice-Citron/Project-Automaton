@@ -15,9 +15,13 @@ source ~/.bashrc
 # Clone this repo
 mkdir -p ~/ws_aic/src
 cd ~/ws_aic/src
-# git clone https://github.com/intrinsic-dev/aic
+git clone https://github.com/intrinsic-dev/aic
+# extra policies
+git clone https://github.com/rangers-intrinsic/aic-rangers.git
+cd aic-rangers
 git switch fix/cable-tangling-issue-38
-git clone https://github.com/rangers-intrinsic/aic-rangers.git aic
+cd ..
+cp -v ~/ws_aic/src/aic-rangers/aic_example_policies/aic_example_policies/ros/CheatCode*.py   ~/ws_aic/src/aic/aic_example_policies/aic_example_policies/ros/
 
 # Install and build dependencies
 cd ~/ws_aic/src/aic
