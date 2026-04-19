@@ -16,6 +16,7 @@ source ~/.bashrc
 mkdir -p ~/ws_aic/src
 cd ~/ws_aic/src
 # git clone https://github.com/intrinsic-dev/aic
+git switch fix/cable-tangling-issue-38
 git clone https://github.com/rangers-intrinsic/aic-rangers.git aic
 
 # Install and build dependencies
