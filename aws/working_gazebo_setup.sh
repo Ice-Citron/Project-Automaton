@@ -29,6 +29,10 @@ cp -v ~/ws_aic/src/aic-rangers/aic_example_policies/aic_example_policies/ros/Che
 rsync -a --delete \
   ~/ws_aic/src/aic-rangers/aic_ros_recorder/ \
   ~/ws_aic/src/aic/aic_ros_recorder/
+cd ~/ws_aic/src/aic && pixi run ros2 pkg list | grep -i aic_ros_recorder
+grep -q 'ros-kilted-aic-ros-recorder' pixi.toml || \
+sed -i '/^\[dependencies\]$/a ros-kilted-aic-ros-recorder = { path = "../aic-rangers/aic_ros_recorder" }' pixi.toml
+
 
 # Install and build dependencies
 cd ~/ws_aic/src/aic
