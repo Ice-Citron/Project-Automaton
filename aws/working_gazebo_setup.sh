@@ -18,10 +18,17 @@ cd ~/ws_aic/src
 git clone https://github.com/intrinsic-dev/aic
 # extra policies
 git clone https://github.com/rangers-intrinsic/aic-rangers.git
+
+# bring in my spare policies
 cd aic-rangers
 git switch fix/cable-tangling-issue-38
 cd ..
 cp -v ~/ws_aic/src/aic-rangers/aic_example_policies/aic_example_policies/ros/CheatCode*.py   ~/ws_aic/src/aic/aic_example_policies/aic_example_policies/ros/
+
+# bring in the lovely ros recorder
+rsync -a --delete \
+  ~/ws_aic/src/aic-rangers/aic_ros_recorder/ \
+  ~/ws_aic/src/aic/aic_ros_recorder/
 
 # Install and build dependencies
 cd ~/ws_aic/src/aic
