@@ -15,7 +15,8 @@ source ~/.bashrc
 # Clone this repo
 mkdir -p ~/ws_aic/src
 cd ~/ws_aic/src
-git clone https://github.com/intrinsic-dev/aic
+# git clone https://github.com/intrinsic-dev/aic
+git clone https://github.com/rangers-intrinsic/aic-rangers.git aic
 
 # Install and build dependencies
 cd ~/ws_aic/src/aic
