@@ -6,10 +6,14 @@ control experiments with MuJoCo, Isaac Lab, Gazebo, and ROS 2, including
 cable-insertion policy prototypes, observation logging, task-board
 randomisation, mesh and pose tools, SO-101 print files, and study notebooks.
 
+Evan's AWS scripts provide GPU instance setup, remote desktop access, simulator
+checks, and trial-data conversion.
+
 ![AIC ROS 2 interface diagram](docs/ros2-graph/aic_ros2_graph.png)
 
 [Diagram PDF](docs/ros2-graph/aic_ros2_graph.pdf) ·
 [Experiment code](intrinsic-src/) ·
+[AWS setup](aws/README.md) ·
 [Research notes](research-notes/)
 
 ## Policy prototypes and data capture
@@ -65,13 +69,13 @@ ROS 2 interface diagram shown above, with PNG and PDF outputs.
   synthetic data, simulation, and robotics hardware.
 - [SO-101 print files](so-101/print-files/) contain leader and follower
   STL files, plus fit gauges.
-
 ## Repository structure
 
 ```text
 Project-Automaton/
+├── aws/                      # AWS setup, checks, and dataset tools
 ├── intrinsic-src/
-│   ├── custom_policies/       # ROS 2 policy prototypes
+│   ├── custom_policies/      # ROS 2 policy prototypes
 │   ├── data/mujoco/           # Pose and mesh-correction data
 │   ├── meshes/mujoco/         # OBJ and STL geometry
 │   ├── scenes/mujoco/         # MJCF scenes
@@ -85,13 +89,17 @@ Project-Automaton/
 ├── submodules/
 │   ├── aic/                  # AIC toolkit
 │   └── lerobot/              # LeRobot
-├── docs/                     # Diagrams, plans, setup notes, run configs
+├── docs/
+│   ├── aws/                  # AWS setup and build-tool notes
+│   └── ...                   # Diagrams, plans, and experiment records
 ├── LICENSE
 └── README.md
 ```
 
-## Licence and attribution
+## Contributors and licence
 
-See [LICENSE](LICENSE) for the repository's MIT licence.
+Evan O'Leary contributed AWS environment and dataset tools.
+See [LICENSE](LICENSE) for the root MIT licence. Some files specify separate
+licences; the ROS bag converter declares Apache-2.0 in its source header.
 Isaac Lab, PythonRobotics, AIC, and LeRobot material retains its source
 credits and applicable third-party licences.
