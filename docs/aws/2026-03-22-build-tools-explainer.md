@@ -48,7 +48,7 @@ Key properties:
 
 ### The `pixi.toml` in this project
 
-Root: `References/aic/pixi.toml`
+Root: `submodules/aic/pixi.toml`
 
 ```toml
 [workspace]

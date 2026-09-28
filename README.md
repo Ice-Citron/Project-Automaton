@@ -63,7 +63,7 @@ ROS 2 interface diagram shown above, with PNG and PDF outputs.
   quadrotor trajectories and rocket landing with successive convexification.
 - [NVIDIA webinar notes](research-notes/nvidia-webinars/) cover physical AI,
   synthetic data, simulation, and robotics hardware.
-- [SO-101 print files](SO-101/print-files/) contain leader and follower
+- [SO-101 print files](so-101/print-files/) contain leader and follower
   STL files, plus fit gauges.
 
 ## Repository structure
@@ -81,7 +81,7 @@ Project-Automaton/
 │   ├── isaac-lab-tutorials/
 │   ├── python-robotics/
 │   └── nvidia-webinars/
-├── SO-101/print-files/        # Printable parts and gauges
+├── so-101/print-files/        # Printable parts and gauges
 ├── submodules/
 │   ├── aic/                  # AIC toolkit
 │   └── lerobot/              # LeRobot

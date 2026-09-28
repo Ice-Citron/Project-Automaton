@@ -8,7 +8,7 @@
 set -eo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-AIC="$REPO_ROOT/References/aic"
+AIC="$REPO_ROOT/submodules/aic"
 WS="$HOME/ws_aic"
 ISAACLAB="$HOME/IsaacLab"
 MUJOCO_WORLD="$HOME/aic_mujoco_world"

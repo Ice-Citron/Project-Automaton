@@ -178,7 +178,7 @@ Ubuntu's toolchain PPAs let you install multiple GCC versions side by side. The 
 ```
 ~/ws_aic/
 ├── src/
-│   ├── aic/               ← symlink to your repo's References/aic
+│   ├── aic/               ← symlink to your repo's submodules/aic
 │   │   ├── aic_model/     ← ROS package: runs policies
 │   │   ├── aic_adapter/   ← ROS package: bridges sim ↔ policy
 │   │   ├── aic_controller/← ROS package: ros2_control interface

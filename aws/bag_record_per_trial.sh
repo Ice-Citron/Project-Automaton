@@ -2,7 +2,7 @@
 # bag_record_per_trial.sh — One ros2 bag per InsertCable trial (wraps rosbag_per_trial.py)
 #
 # Usage (from host, AIC already in PATH via pixi):
-#   export AIC_WS=~/ws_aic/src/aic    # or Project-Automaton/References/aic
+#   export AIC_WS=~/ws_aic/src/aic    # or Project-Automaton/submodules/aic
 #   bash aws/bag_record_per_trial.sh ~/bags/my_session
 #
 # Prerequisites: sim + aic_engine running; policy (e.g. CheatCode) up; same Zenoh as usual.
@@ -13,8 +13,8 @@ OUT="${1:?Usage: $0 <output-directory>}"
 
 if [[ -n "${AIC_WS:-}" ]]; then
   A="$AIC_WS"
-elif [[ -d "$SCRIPT_DIR/../References/aic" ]]; then
-  A="$(cd "$SCRIPT_DIR/../References/aic" && pwd)"
+elif [[ -d "$SCRIPT_DIR/../submodules/aic" ]]; then
+  A="$(cd "$SCRIPT_DIR/../submodules/aic" && pwd)"
 else
   A="$HOME/ws_aic/src/aic"
 fi

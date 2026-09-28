@@ -17,8 +17,8 @@ shift 2
 
 if [[ -n "${AIC_WS:-}" ]]; then
   A="$AIC_WS"
-elif [[ -d "$SCRIPT_DIR/../References/aic" ]]; then
-  A="$(cd "$SCRIPT_DIR/../References/aic" && pwd)"
+elif [[ -d "$SCRIPT_DIR/../submodules/aic" ]]; then
+  A="$(cd "$SCRIPT_DIR/../submodules/aic" && pwd)"
 else
   A="$HOME/ws_aic/src/aic"
 fi

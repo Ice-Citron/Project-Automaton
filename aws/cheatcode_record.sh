@@ -9,14 +9,14 @@
 #   bash aws/cheatcode_record.sh record        # record bag (requires sim + policy)
 #
 # Optional env:
-#   AIC_WS   — pixi workspace root (default: References/aic in repo, else ~/ws_aic/src/aic)
+#   AIC_WS   — pixi workspace root (default: submodules/aic in repo, else ~/ws_aic/src/aic)
 #   BAG_DIR  — output directory for bags (default: ~/bags)
 
 set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-REF_AIC="$REPO_ROOT/References/aic"
+REF_AIC="$REPO_ROOT/submodules/aic"
 if [[ -n "${AIC_WS:-}" ]]; then
   :
 elif [[ -d "$REF_AIC" ]]; then
@@ -51,7 +51,7 @@ pixi run ros2 bag record -o $BAG_DIR/cheatcode_run_\$(date +%Y%m%d_%H%M%S) /obse
 Sanity check (optional):
 pixi run ros2 topic list | grep -E 'observations|pose_commands|joint_states'
 
-Note: This produces a ROS bag, not a Hugging Face LeRobot dataset. For ACT/LeRobot format use lerobot-record + teleop (see References/aic/aic_utils/lerobot_robot_aic/README.md).
+Note: This produces a ROS bag, not a Hugging Face LeRobot dataset. For ACT/LeRobot format use lerobot-record + teleop (see submodules/aic/aic_utils/lerobot_robot_aic/README.md).
 
 One bag per InsertCable trial (manifest + trial_NNNN_* dirs):
   bash $SCRIPT_DIR/bag_record_per_trial.sh ~/bags/my_session

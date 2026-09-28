@@ -15,7 +15,7 @@ pipelines. Isaac Lab ``record_demos.py`` instead writes HDF5 episodes with expli
 success/reset handling inside the sim loop.
 
 Requires: ``ros-kilted-ros2bag`` and ``ros-kilted-rosbag2-storage-default-plugins``
-in pixi (see References/aic/pixi.toml).
+in pixi (see submodules/aic/pixi.toml).
 """
 
 from __future__ import annotations
