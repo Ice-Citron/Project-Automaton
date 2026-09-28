@@ -1,6 +1,6 @@
 [submodule "SO-101/lerobot"]
-	path = SO-101/lerobot
+	path = submodules/lerobot
 	url = https://github.com/huggingface/lerobot.git
 [submodule "References/aic"]
-	path = References/aic
+	path = submodules/aic
 	url = https://github.com/intrinsic-dev/aic.git

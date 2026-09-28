@@ -1,0 +1,52 @@
+<mujoco model="mount_test">
+  <compiler angle="radian" meshdir="."/>
+  <visual>
+    <headlight ambient="0.3 0.3 0.3" diffuse="0.6 0.6 0.6"/>
+  </visual>
+  <asset>
+    <!-- Use the ORIGINAL manual exports (no pre-rotation, no axis fix) -->
+    <!-- Both mount and plug go through same MuJoCo scramble, so relative offset is preserved -->
+    <mesh name="sfp_mount" file="manual_sfp_mount.obj"/>
+    <mesh name="sfp_mod" file="manual_sfp_module.obj"/>
+    <mesh name="sc_mount" file="manual_sc_mount_fixed.obj"/>
+    <mesh name="sc_plug" file="manual_sc_plug.obj"/>
+    <mesh name="lc_mount" file="manual_lc_mount_fixed.obj"/>
+    <mesh name="lc_plug" file="manual_lc_plug.obj"/>
+    <material name="mount_grey" rgba="0.35 0.35 0.35 1" specular="0.3"/>
+    <material name="plug_grey" rgba="0.6 0.6 0.6 1" specular="0.4"/>
+    <material name="plug_blue" rgba="0.15 0.4 0.85 1" specular="0.4"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1" dir="0 0 -1" diffuse="1 1 1"/>
+    <geom type="plane" size="1 1 0.01" rgba="0.2 0.2 0.2 1"/>
+
+    <!-- SFP Mount + Module -->
+    <!-- Mount cradle center in XACRO: ~(x=0.022, y=0, z=0.008) -->
+    <!-- In MuJoCo scrambled frame: (XACRO_Y, XACRO_Z, XACRO_X) = (0, 0.008, 0.022) -->
+    <!-- SFP module long axis is GLB_Y, mount long axis is GLB_X -->
+    <!-- Module needs 90° around GLB_Z to align. GLB_Z maps to MuJoCo_Y -->
+    <!-- So 90° around MuJoCo_Y: quat=(0.707, 0, 0.707, 0) -->
+    <body name="sfp_test" pos="-0.15 0 0.01">
+      <geom type="mesh" mesh="sfp_mount" material="mount_grey" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="sfp_mod" material="plug_grey" pos="0 0.008 0.022" quat="0.707 0 0.707 0" contype="0" conaffinity="0"/>
+    </body>
+
+    <!-- SC Mount + Plug -->
+    <!-- SC plug long axis is GLB_X (same as mount), no rotation needed -->
+    <!-- Cradle center XACRO: ~(0.025, 0, 0.008) → MuJoCo: (0, 0.008, 0.025) -->
+    <body name="sc_test" pos="0 0 0.012">
+      <geom type="mesh" mesh="sc_mount" material="mount_grey" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="sc_plug" material="plug_blue" pos="0 0.008 0.025" contype="0" conaffinity="0"/>
+    </body>
+
+    <!-- LC Mount + Plug -->
+    <!-- LC plug long axis is GLB_Y, mount long axis is GLB_X -->
+    <!-- Same as SFP: needs 90° around MuJoCo_Y -->
+    <!-- Cradle center XACRO: ~(0.022, 0, 0.006) → MuJoCo: (0, 0.006, 0.022) -->
+    <body name="lc_test" pos="0.15 0 0.012">
+      <geom type="mesh" mesh="lc_mount" material="mount_grey" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="lc_plug" material="plug_grey" pos="0 0.006 0.022" quat="0.707 0 0.707 0" contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+</mujoco>

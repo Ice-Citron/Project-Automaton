@@ -1,47 +1,97 @@
-# NVIDIA Isaac Sim & Physical AI: The Lego-Assembling Arm
+# Project Automaton
 
-> **A personal roadmap and codebase dedicated to mastering Reinforcement Learning (RL), hardware design, NVIDIA Isaac Sim, and autonomous robotics.**
+This repository consists of agent-assisted code written for Intrinsic's
+AI for Industry Challenge. The codebase contains robotic simulation and
+control experiments with MuJoCo, Isaac Lab, Gazebo, and ROS 2, including
+cable-insertion policy prototypes, observation logging, task-board
+randomisation, mesh and pose tools, SO-101 print files, and study notebooks.
 
-## Project Vision
-The ultimate goal of this repository is to design, develop, train, and deploy a Reinforcement Learning agent capable of autonomously assembling Lego sets using a custom-modified [SO-100](https://github.com/TheRobotStudio/SO-100) robotic arm. 
+![AIC ROS 2 interface diagram](docs/ros2-graph/aic_ros2_graph.png)
 
-Beyond software and simulation, this project heavily involves hardware design and mechanical modification to ensure the physical arm can handle the high-precision tolerances required for Lego assembly. It serves as a comprehensive sandbox to upskill in the future of physical AI, explore autonomous manufacturing processes, and develop systems capable of replacing repetitive manual labor in factory environments.
+[Diagram PDF](docs/ros2-graph/aic_ros2_graph.pdf) ·
+[Experiment code](intrinsic-src/) ·
+[Research notes](research-notes/)
 
-## Development Roadmap
+## Policy prototypes and data capture
 
-This project is broken down into progressive milestones, moving from foundational infrastructure and hardware prototyping to advanced RL deployment:
+The [policy directory](intrinsic-src/custom_policies/) contains three
+experimental ROS 2 policies:
 
-### Phase 1: Infrastructure & Foundations (Current)
-- [x] Establish automated sync pipelines between the local Windows workstation (RTX 5090) and cloud Linux servers (Vast.ai, Tensordock utilizing RTX 6000 Pro and L40 hardware).
-- [ ] Complete foundational physical AI and Isaac Sim training (via Lychee AI tutorials).
-- [ ] Set up the core Reinforcement Learning environments and physics parameters.
+- `AutomatonV0.py`: receives observations and sends approach-and-hold
+  commands through the AIC motion interface.
+- `AutomatonV1.py`: captures wrist-camera images and uses OpenCV contours
+  to detect port candidates. It estimates position with an assumed depth.
+- `DataLogger.py`: combines a ground-truth-guided insertion controller
+  with observation capture. It saves camera images, joint states, wrist
+  wrench data, controller state, and timestamps.
 
-### Phase 2: Hardware Design & Simulation Research
-- [ ] Design, CAD, and prototype hardware modifications for the SO-100 robotic arm to support high-precision gripping and Lego manipulation.
-- [ ] Reproduce state-of-the-art (SOTA) robotics research papers within Isaac Sim.
-- [ ] Import and configure the highly accurate digital twin of the customized SO-100 robotic arm.
-- [ ] Integrate ROS2 with Isaac Sim for seamless sim-to-real communication.
+These files require the AIC interfaces and access through its policy loader.
 
-### Phase 3: The Capstone (Lego Assembly)
-- [ ] Develop custom RL reward functions for spatial awareness, precision gripping, and structural Lego piece snapping.
-- [ ] Train the agent using cloud compute clusters, iterating continuously on the digital twin.
-- [ ] Deploy the trained model to the physical, custom-built SO-100 hardware for real-world testing and validation.
+## MuJoCo tools and simulator assets
 
-## Tech Stack & Hardware
-* **Hardware Design:** CAD software and 3D printing/fabrication for arm modifications
-* **Simulation:** NVIDIA Isaac Sim, Omniverse
-* **AI / Machine Learning:** Reinforcement Learning (RL), PyTorch
-* **Robotics Frameworks:** ROS2, custom kinematic controllers
-* **Compute Infrastructure:** * Local Windows Workstation (NVIDIA RTX 5090)
-  * Cloud Linux Servers via Vast.ai & Tensordock (NVIDIA RTX 6000 Pro, NVIDIA L40)
+The [MuJoCo tools](intrinsic-src/tools/mujoco/) include:
 
-## Repository Contents
-*(Currently tracking Phase 1 Infrastructure)*
-* `sync_scripts/` - Automated synchronization tools bridging local storage, Google Drive, and cloud GPU instances for seamless model checkpointing and dataset management.
-* *(Future)* `hardware_design/` - CAD files, 3D printable STLs, and schematics for the modified SO-100 arm.
-* *(Future)* `isaac_envs/` - Custom Omniverse environments and Lego digital twins.
-* *(Future)* `rl_training/` - Training loops, reward functions, and policy networks.
+- Task-board randomisation with a seed and configurable component counts.
+- A standalone policy runner with wave-arm and target-approach modes.
+- Mesh-axis checks and correction-quaternion calculations.
+- Physics-based component settling and pose export.
+- Coordinate transforms and pose extraction for Isaac Lab.
+- GLB material and texture extraction for MJCF assets.
+- MJCF preparation with shorter asset filenames for Isaac Sim imports.
 
-## Author
-**Shi Hao Ng**
-*Imperial College London*
+[Scenes](intrinsic-src/scenes/mujoco/) contain task-board and component
+test environments. [Meshes](intrinsic-src/meshes/mujoco/) contain connector,
+port, and mount geometry in OBJ and STL formats.
+
+## ROS 2 and Gazebo utilities
+
+The MuJoCo launcher starts the Zenoh router, simulator, policy, and trigger.
+The action client sends an insertion request to the AIC policy node.
+The [bag reader](intrinsic-src/tools/gazebo/bag_reader.py) extracts
+joint-state and force-torque data from recorded trials.
+
+The [diagram source](docs/ros2-graph/aic_ros2_graph.py) generates the
+ROS 2 interface diagram shown above, with PNG and PDF outputs.
+
+## Research notes and hardware
+
+- [Robotics notebooks](research-notes/robotics-notebooks/) cover ROS 2,
+  simulator setup, teleoperation, ACT, datasets, and experiment notes.
+- [Isaac Lab tutorials](research-notes/isaac-lab-tutorials/) cover scene
+  creation, rigid bodies, deformable objects, and articulations.
+- [PythonRobotics examples](research-notes/python-robotics/) cover
+  quadrotor trajectories and rocket landing with successive convexification.
+- [NVIDIA webinar notes](research-notes/nvidia-webinars/) cover physical AI,
+  synthetic data, simulation, and robotics hardware.
+- [SO-101 print files](SO-101/print-files/) contain leader and follower
+  STL files, plus fit gauges.
+
+## Repository structure
+
+```text
+Project-Automaton/
+├── intrinsic-src/
+│   ├── custom_policies/       # ROS 2 policy prototypes
+│   ├── data/mujoco/           # Pose and mesh-correction data
+│   ├── meshes/mujoco/         # OBJ and STL geometry
+│   ├── scenes/mujoco/         # MJCF scenes
+│   └── tools/                # MuJoCo and Gazebo utilities
+├── research-notes/
+│   ├── robotics-notebooks/
+│   ├── isaac-lab-tutorials/
+│   ├── python-robotics/
+│   └── nvidia-webinars/
+├── SO-101/print-files/        # Printable parts and gauges
+├── submodules/
+│   ├── aic/                  # AIC toolkit
+│   └── lerobot/              # LeRobot
+├── docs/                     # Diagrams, plans, setup notes, run configs
+├── LICENSE
+└── README.md
+```
+
+## Licence and attribution
+
+See [LICENSE](LICENSE) for the repository's MIT licence.
+Isaac Lab, PythonRobotics, AIC, and LeRobot material retains its source
+credits and applicable third-party licences.
