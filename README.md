@@ -1,105 +1,97 @@
 # Project Automaton
 
-Robot simulation tools, cable-insertion policy prototypes, and robotics
-study material. The code uses MuJoCo, Gazebo, ROS 2, and NVIDIA Isaac Lab.
-The repository also contains SO-101 print files and a LeRobot submodule.
-
-## Simulation and control
-
-[Intrinsic-AI](Intrinsic-AI/) contains the main experiment code:
-
-- **Policy prototypes:** `AutomatonV0` sends approach-and-hold commands.
-  `AutomatonV1` captures wrist-camera images and detects port candidates
-  with OpenCV. Its position estimate uses an assumed depth.
-- **Observation capture:** `DataLogger` combines a ground-truth-guided
-  controller with camera, joint-state, wrench, and controller-state logs.
-- **MuJoCo scenes:** MJCF files and connector meshes support task-board
-  experiments. Tools randomise component placement with a fixed seed.
-- **Mesh and pose tools:** Scripts inspect mesh axes, calculate correction
-  quaternions, settle components, and export poses for Isaac Lab.
-- **Material conversion:** Tools extract colours and textures from GLB
-  assets and prepare MJCF files for simulator imports.
-- **ROS 2 tools:** A launcher and action client support policy experiments.
-  A bag reader extracts joint-state and force-torque data from trial logs.
-
-[Policy source](Intrinsic-AI/custom_policies/) ·
-[MuJoCo tools](Intrinsic-AI/tools/mujoco/) ·
-[Scenes](Intrinsic-AI/scenes/mujoco/)
-
-## ROS 2 interface diagram
+This repository consists of agent-assisted code written for Intrinsic's
+AI for Industry Challenge. The codebase contains robotic simulation and
+control experiments with MuJoCo, Isaac Lab, Gazebo, and ROS 2, including
+cable-insertion policy prototypes, observation logging, task-board
+randomisation, mesh and pose tools, SO-101 print files, and study notebooks.
 
 ![AIC ROS 2 interface diagram](docs/ros2-graph/aic_ros2_graph.png)
 
-[Open the PDF](docs/ros2-graph/aic_ros2_graph.pdf) ·
-[Diagram source](docs/ros2-graph/aic_ros2_graph.py)
+[Diagram PDF](docs/ros2-graph/aic_ros2_graph.pdf) ·
+[Experiment code](intrinsic-src/) ·
+[Research notes](research-notes/)
 
-## Study material and hardware
+## Policy prototypes and data capture
 
-- [Robotics notebooks](study/robotics-notebooks/) cover simulator setup,
-  ROS 2 interfaces, teleoperation, ACT, datasets, and experiment notes.
-- [Isaac Lab tutorials](study/isaac-lab-tutorials/) include empty scenes,
-  object creation, rigid bodies, deformable objects, and articulations.
-- [PythonRobotics examples](study/python-robotics/) cover quadrotor
-  trajectories and rocket landing with successive convexification.
-- [NVIDIA webinar notes](study/nvidia-webinars/) cover physical AI,
+The [policy directory](intrinsic-src/custom_policies/) contains three
+experimental ROS 2 policies:
+
+- `AutomatonV0.py`: receives observations and sends approach-and-hold
+  commands through the AIC motion interface.
+- `AutomatonV1.py`: captures wrist-camera images and uses OpenCV contours
+  to detect port candidates. It estimates position with an assumed depth.
+- `DataLogger.py`: combines a ground-truth-guided insertion controller
+  with observation capture. It saves camera images, joint states, wrist
+  wrench data, controller state, and timestamps.
+
+These files require the AIC interfaces and access through its policy loader.
+
+## MuJoCo tools and simulator assets
+
+The [MuJoCo tools](intrinsic-src/tools/mujoco/) include:
+
+- Task-board randomisation with a seed and configurable component counts.
+- A standalone policy runner with wave-arm and target-approach modes.
+- Mesh-axis checks and correction-quaternion calculations.
+- Physics-based component settling and pose export.
+- Coordinate transforms and pose extraction for Isaac Lab.
+- GLB material and texture extraction for MJCF assets.
+- MJCF preparation with shorter asset filenames for Isaac Sim imports.
+
+[Scenes](intrinsic-src/scenes/mujoco/) contain task-board and component
+test environments. [Meshes](intrinsic-src/meshes/mujoco/) contain connector,
+port, and mount geometry in OBJ and STL formats.
+
+## ROS 2 and Gazebo utilities
+
+The MuJoCo launcher starts the Zenoh router, simulator, policy, and trigger.
+The action client sends an insertion request to the AIC policy node.
+The [bag reader](intrinsic-src/tools/gazebo/bag_reader.py) extracts
+joint-state and force-torque data from recorded trials.
+
+The [diagram source](docs/ros2-graph/aic_ros2_graph.py) generates the
+ROS 2 interface diagram shown above, with PNG and PDF outputs.
+
+## Research notes and hardware
+
+- [Robotics notebooks](research-notes/robotics-notebooks/) cover ROS 2,
+  simulator setup, teleoperation, ACT, datasets, and experiment notes.
+- [Isaac Lab tutorials](research-notes/isaac-lab-tutorials/) cover scene
+  creation, rigid bodies, deformable objects, and articulations.
+- [PythonRobotics examples](research-notes/python-robotics/) cover
+  quadrotor trajectories and rocket landing with successive convexification.
+- [NVIDIA webinar notes](research-notes/nvidia-webinars/) cover physical AI,
   synthetic data, simulation, and robotics hardware.
 - [SO-101 print files](SO-101/print-files/) contain leader and follower
   STL files, plus fit gauges.
 
-## Directory structure
+## Repository structure
 
 ```text
 Project-Automaton/
-├── Intrinsic-AI/
+├── intrinsic-src/
 │   ├── custom_policies/       # ROS 2 policy prototypes
-│   ├── data/mujoco/           # Component poses and mesh corrections
-│   ├── meshes/mujoco/         # Connector and mount meshes
+│   ├── data/mujoco/           # Pose and mesh-correction data
+│   ├── meshes/mujoco/         # OBJ and STL geometry
 │   ├── scenes/mujoco/         # MJCF scenes
 │   └── tools/                # MuJoCo and Gazebo utilities
-├── SO-101/
-│   ├── print-files/          # STL files
-│   └── lerobot/              # Git submodule
-├── References/
-│   └── aic/                  # Git submodule
-├── study/
+├── research-notes/
 │   ├── robotics-notebooks/
 │   ├── isaac-lab-tutorials/
 │   ├── python-robotics/
 │   └── nvidia-webinars/
-├── docs/                     # Diagrams, plans, notes, and run configs
+├── SO-101/print-files/        # Printable parts and gauges
+├── submodules/
+│   ├── aic/                  # AIC toolkit
+│   └── lerobot/              # LeRobot
+├── docs/                     # Diagrams, plans, setup notes, run configs
 ├── LICENSE
 └── README.md
 ```
 
-## Setup
-
-Clone the repository:
-
-```bash
-git clone https://github.com/Ice-Citron/Project-Automaton.git
-cd Project-Automaton
-```
-
-Install Git LFS before you fetch LeRobot assets. Then fetch the submodules:
-
-```bash
-git submodule update --init --recursive
-```
-
-The AIC and LeRobot submodules contain their own setup instructions.
-The simulator scripts require their respective simulator environments.
-
-Several scripts use fixed paths under `~/projects/Project-Automaton/`.
-The ROS 2 launcher also expects `~/ws_aic/install/setup.bash`.
-Check these paths and the required assets before you run an experiment.
-Custom ROS 2 policies must be available to the AIC policy loader.
-
-[Setup records](docs/session-notes/) contain environment details and
-simulator issue reports. The policy code is experimental.
-
-## Licence and sources
+## Licence and attribution
 
 See [LICENSE](LICENSE) for the repository's MIT licence.
-Tutorial and reference code includes material from Isaac Lab and
-PythonRobotics. The AIC and LeRobot dependencies remain separate submodules.
-Third-party code and assets retain their respective licences and credits.
+Isaac Lab, PythonRobotics, AIC, and LeRobot material retains its source
+credits and applicable third-party licences.
