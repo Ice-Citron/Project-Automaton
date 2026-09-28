@@ -1,59 +1,105 @@
----                                                                                   
-⚠️  This repository is no longer actively updated.                                                                              
-                                                                                                                               
-I have since joined a new team for the AI for Industry Challenge (AIC), and all ongoing development has moved to a private     
-repository. This repo contains my earlier solo/duo work on the competition including MuJoCo task board randomization, Isaac Lab
- integration attempts, and Gazebo setup scripts.                                                                               
-                                                                                                                               
-I will post a public update on the outcome of the competition in approximately two months (around June 2026), including whether
- we qualified or not. Thank you for your interest!
-     
----
+# Project Automaton
 
-# NVIDIA Isaac Sim & Physical AI: The Lego-Assembling Arm
+Robot simulation tools, cable-insertion policy prototypes, and robotics
+study material. The code uses MuJoCo, Gazebo, ROS 2, and NVIDIA Isaac Lab.
+The repository also contains SO-101 print files and a LeRobot submodule.
 
-> **A personal roadmap and codebase dedicated to mastering Reinforcement Learning (RL), hardware design, NVIDIA Isaac Sim, and autonomous robotics.**
+## Simulation and control
 
-## Project Vision
-The ultimate goal of this repository is to design, develop, train, and deploy a Reinforcement Learning agent capable of autonomously assembling Lego sets using a custom-modified [SO-100](https://github.com/TheRobotStudio/SO-100) robotic arm. 
+[Intrinsic-AI](Intrinsic-AI/) contains the main experiment code:
 
-Beyond software and simulation, this project heavily involves hardware design and mechanical modification to ensure the physical arm can handle the high-precision tolerances required for Lego assembly. It serves as a comprehensive sandbox to upskill in the future of physical AI, explore autonomous manufacturing processes, and develop systems capable of replacing repetitive manual labor in factory environments.
+- **Policy prototypes:** `AutomatonV0` sends approach-and-hold commands.
+  `AutomatonV1` captures wrist-camera images and detects port candidates
+  with OpenCV. Its position estimate uses an assumed depth.
+- **Observation capture:** `DataLogger` combines a ground-truth-guided
+  controller with camera, joint-state, wrench, and controller-state logs.
+- **MuJoCo scenes:** MJCF files and connector meshes support task-board
+  experiments. Tools randomise component placement with a fixed seed.
+- **Mesh and pose tools:** Scripts inspect mesh axes, calculate correction
+  quaternions, settle components, and export poses for Isaac Lab.
+- **Material conversion:** Tools extract colours and textures from GLB
+  assets and prepare MJCF files for simulator imports.
+- **ROS 2 tools:** A launcher and action client support policy experiments.
+  A bag reader extracts joint-state and force-torque data from trial logs.
 
-## Development Roadmap
+[Policy source](Intrinsic-AI/custom_policies/) ·
+[MuJoCo tools](Intrinsic-AI/tools/mujoco/) ·
+[Scenes](Intrinsic-AI/scenes/mujoco/)
 
-This project is broken down into progressive milestones, moving from foundational infrastructure and hardware prototyping to advanced RL deployment:
+## ROS 2 interface diagram
 
-### Phase 1: Infrastructure & Foundations (Current)
-- [x] Establish automated sync pipelines between the local Windows workstation (RTX 5090) and cloud Linux servers (Vast.ai, Tensordock utilizing RTX 6000 Pro and L40 hardware).
-- [ ] Complete foundational physical AI and Isaac Sim training (via Lychee AI tutorials).
-- [ ] Set up the core Reinforcement Learning environments and physics parameters.
+![AIC ROS 2 interface diagram](docs/ros2-graph/aic_ros2_graph.png)
 
-### Phase 2: Hardware Design & Simulation Research
-- [ ] Design, CAD, and prototype hardware modifications for the SO-100 robotic arm to support high-precision gripping and Lego manipulation.
-- [ ] Reproduce state-of-the-art (SOTA) robotics research papers within Isaac Sim.
-- [ ] Import and configure the highly accurate digital twin of the customized SO-100 robotic arm.
-- [ ] Integrate ROS2 with Isaac Sim for seamless sim-to-real communication.
+[Open the PDF](docs/ros2-graph/aic_ros2_graph.pdf) ·
+[Diagram source](docs/ros2-graph/aic_ros2_graph.py)
 
-### Phase 3: The Capstone (Lego Assembly)
-- [ ] Develop custom RL reward functions for spatial awareness, precision gripping, and structural Lego piece snapping.
-- [ ] Train the agent using cloud compute clusters, iterating continuously on the digital twin.
-- [ ] Deploy the trained model to the physical, custom-built SO-100 hardware for real-world testing and validation.
+## Study material and hardware
 
-## Tech Stack & Hardware
-* **Hardware Design:** CAD software and 3D printing/fabrication for arm modifications
-* **Simulation:** NVIDIA Isaac Sim, Omniverse
-* **AI / Machine Learning:** Reinforcement Learning (RL), PyTorch
-* **Robotics Frameworks:** ROS2, custom kinematic controllers
-* **Compute Infrastructure:** * Local Windows Workstation (NVIDIA RTX 5090)
-  * Cloud Linux Servers via Vast.ai & Tensordock (NVIDIA RTX 6000 Pro, NVIDIA L40)
+- [Robotics notebooks](study/robotics-notebooks/) cover simulator setup,
+  ROS 2 interfaces, teleoperation, ACT, datasets, and experiment notes.
+- [Isaac Lab tutorials](study/isaac-lab-tutorials/) include empty scenes,
+  object creation, rigid bodies, deformable objects, and articulations.
+- [PythonRobotics examples](study/python-robotics/) cover quadrotor
+  trajectories and rocket landing with successive convexification.
+- [NVIDIA webinar notes](study/nvidia-webinars/) cover physical AI,
+  synthetic data, simulation, and robotics hardware.
+- [SO-101 print files](SO-101/print-files/) contain leader and follower
+  STL files, plus fit gauges.
 
-## Repository Contents
-*(Currently tracking Phase 1 Infrastructure)*
-* `sync_scripts/` - Automated synchronization tools bridging local storage, Google Drive, and cloud GPU instances for seamless model checkpointing and dataset management.
-* *(Future)* `hardware_design/` - CAD files, 3D printable STLs, and schematics for the modified SO-100 arm.
-* *(Future)* `isaac_envs/` - Custom Omniverse environments and Lego digital twins.
-* *(Future)* `rl_training/` - Training loops, reward functions, and policy networks.
+## Directory structure
 
-## Author
-**Shi Hao Ng**
-*Imperial College London*
+```text
+Project-Automaton/
+├── Intrinsic-AI/
+│   ├── custom_policies/       # ROS 2 policy prototypes
+│   ├── data/mujoco/           # Component poses and mesh corrections
+│   ├── meshes/mujoco/         # Connector and mount meshes
+│   ├── scenes/mujoco/         # MJCF scenes
+│   └── tools/                # MuJoCo and Gazebo utilities
+├── SO-101/
+│   ├── print-files/          # STL files
+│   └── lerobot/              # Git submodule
+├── References/
+│   └── aic/                  # Git submodule
+├── study/
+│   ├── robotics-notebooks/
+│   ├── isaac-lab-tutorials/
+│   ├── python-robotics/
+│   └── nvidia-webinars/
+├── docs/                     # Diagrams, plans, notes, and run configs
+├── LICENSE
+└── README.md
+```
+
+## Setup
+
+Clone the repository:
+
+```bash
+git clone https://github.com/Ice-Citron/Project-Automaton.git
+cd Project-Automaton
+```
+
+Install Git LFS before you fetch LeRobot assets. Then fetch the submodules:
+
+```bash
+git submodule update --init --recursive
+```
+
+The AIC and LeRobot submodules contain their own setup instructions.
+The simulator scripts require their respective simulator environments.
+
+Several scripts use fixed paths under `~/projects/Project-Automaton/`.
+The ROS 2 launcher also expects `~/ws_aic/install/setup.bash`.
+Check these paths and the required assets before you run an experiment.
+Custom ROS 2 policies must be available to the AIC policy loader.
+
+[Setup records](docs/session-notes/) contain environment details and
+simulator issue reports. The policy code is experimental.
+
+## Licence and sources
+
+See [LICENSE](LICENSE) for the repository's MIT licence.
+Tutorial and reference code includes material from Isaac Lab and
+PythonRobotics. The AIC and LeRobot dependencies remain separate submodules.
+Third-party code and assets retain their respective licences and credits.
